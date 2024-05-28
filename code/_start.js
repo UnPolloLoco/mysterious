@@ -17,6 +17,8 @@ const SCALE = width()/16;
 
 
 
-loadRoot('sprites/');
+const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
 
-loadSprite('apple', 'apple.png');
+loadSprite('apple', PLACEHOLDER);
+
+// loadRoot('sprites/');
