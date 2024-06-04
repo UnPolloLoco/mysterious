@@ -2,23 +2,22 @@ scene('game', () => {
 
 	// --- MAP CREATION ---
 
+	function getBehavior(char) {
+		let tileInfo = MAP_ICON_INFO[char];
+		if (tileInfo == undefined) return 'NONE';
+		return tileInfo.behavior;
+	}
+
 	var possibleSpawnPoints = [];
 
 	for (let row = 0; row < MAP.length; row++) {
 		for (let column = 0; column < MAP[row].length; column++) {
 
 			let currentTile = MAP[row][column];
-			let currentTileInfo = MAP_ICON_INFO[currentTile];
-			let tileBehavior;
-
-			if (currentTileInfo == undefined) {
-				tileBehavior = 'NONE';
-			} else {
-				tileBehavior = currentTileInfo.behavior;
-			}
+			let tileBehavior = getBehavior(currentTile);
 
 			// Ignore tile if nothing should be done with it
-			if (tileBehavior != 'NONE') {
+			if (!['NONE', 'WALL'].includes(tileBehavior)) {
 
 				let tilePosition = vec2(
 					column * SCALE, 
@@ -28,19 +27,12 @@ scene('game', () => {
 					sprite('block'),
 					scale(SCALE/500),
 					pos(tilePosition),
-					opacity(0.5),
 					{
 						tile: currentTile,
 						behavior: tileBehavior,
 					},
 					'tile',
 				])
-
-				// Wall tile
-				if (tileBehavior == 'WALL') {
-					tile.use('wall');
-					tile.use(color(YELLOW))
-				} 
 
 				// Hitbox tile
 				if (tileBehavior == 'HITBOX') {
@@ -52,7 +44,9 @@ scene('game', () => {
 				if (['FLOOR', 'SPAWN'].includes(tileBehavior)) {
 					tile.use(color(BLUE));
 					// Spawn tile only
-					if (tileBehavior == 'SPAWN') possibleSpawnPoints.push(tilePosition);
+					if (tileBehavior == 'SPAWN') {
+						possibleSpawnPoints.push(tilePosition.add(SCALE/2));
+					}
 				}
 
 			}
@@ -66,10 +60,11 @@ scene('game', () => {
 		tiles: {
 			'#': () => [
 				rect(SCALE, SCALE),
-				opacity(0.5),
+				color(GREEN),
 				area(),
 				body({ isStatic: true }),
 				tile({ isObstacle: true }),
+				opacity(0.7),
 			]
 		}
 	});
@@ -91,13 +86,15 @@ scene('game', () => {
 					height: 6,
 					color: RED,
 				})
-			} 
+			} else {
+				//debug.log('no point :(')
+			}
 		}
 		pts.push(pts[1]);
 
 		// Subtraction creation
 
-		let edgeOffset = 7;
+		let edgeOffset = 1;
 
 		drawSubtracted(
 			() => drawRect({
@@ -110,6 +107,65 @@ scene('game', () => {
 				pts: pts,
 			})
 		)
+	}
+
+	// --- PATHFINDER PREP ---
+
+	// - Graph creation -
+
+	let graphList = [];
+
+	function getTileAt(row, column) {
+		return MAP[row][column];
+	}
+
+	function isHitboxAt(row, column) {
+		let behavior = getBehavior(getTileAt(row, column));
+		return ['WALL', 'HITBOX', 'NONE'].includes(behavior);
+	}
+
+	for (let row = 0; row < MAP.length; row++) {
+		let graphListRow = [];
+		for (let column = 0; column < MAP[0].length; column++) {
+			let tile = getTileAt(row, column);
+			let weight;
+
+			// Has a hitbox?
+			if (isHitboxAt(row, column)) {
+				weight = 0;
+			} else {
+				weight = 1;
+				if (isHitboxAt(row+1, column)) weight += 0.5;
+				if (isHitboxAt(row-1, column)) weight += 0.5;
+				if (isHitboxAt(row, column+1)) weight += 0.5;
+				if (isHitboxAt(row, column-1)) weight += 0.5;
+			}
+
+			graphListRow.push(weight);
+		}
+		graphList.push(graphListRow);
+	}
+
+	let weightGraph = new Graph(graphList, { diagonal: true });
+
+	// - Simplified function -
+
+	function pathfind(start, end) {
+		let convertedStart = weightGraph.grid[start.y][start.x];
+		let convertedEnd = weightGraph.grid[end.y][end.x];
+		let result = astar.search(
+			weightGraph, 
+			convertedStart,
+			convertedEnd,
+			{ heuristic: astar.heuristics.diagonal });
+		let final = [];
+
+		for (let point = 0; point < result.length; point++) {
+			let pointData = result[point];
+			final.push(vec2(pointData.y, pointData.x));
+		}
+
+		return final;
 	}
 
 	// --- PLAYER SPAWN ---
@@ -129,51 +185,66 @@ scene('game', () => {
 		'player'
 	])
 
+	// --- DEBUG TOGGLE ---
+
+	onKeyPress('space', () => {
+		debug.inspect = !debug.inspect;
+	})
+
+	let movementInputStyle = ['tank', 'point'][1];
+
 	onUpdate(() => {
+
+		// --- PLAYER ROTATION INPUTS ---
+
+		// - Tank mode -
+		if (movementInputStyle == 'tank') {
+			if (isKeyDown('a')) {
+				player.rotationAcceleration += dt() * TURNING_ACCELERATION;
+			} else if (isKeyDown('d')) {
+				player.rotationAcceleration -= dt() * TURNING_ACCELERATION;
+			} else {
+				// Deceleration
+				let pra = player.rotationAcceleration;
+				let speedDiff = dt() * TURNING_ACCELERATION;
+
+				if (pra > 0) {
+					// Positive
+					if (pra - speedDiff < 0) {
+						player.rotationAcceleration = 0;
+					} else {
+						player.rotationAcceleration -= speedDiff;
+					}
+				} else if (pra < 0) {
+					// Negative
+					if (pra + speedDiff > 0) {
+						player.rotationAcceleration = 0;
+					} else {
+						player.rotationAcceleration += speedDiff;
+					}
+				}
+			}
+
+			player.rotationAcceleration = Math.max(-1, Math.min(player.rotationAcceleration, 1));
+
+			player.angle -= player.rotationAcceleration * dt() * TURNING_SPEED;
+
+		// - Point mode -
+		} else if (movementInputStyle == 'point') {
+			player.angle = toWorld(mousePos()).angle(player.pos) + 90;
+		}
 
 		// --- PLAYER MOVEMENT INPUTS ---
 
-		// - Movement -
-		if (isKeyDown('w')) {
+		let isWalking = movementInputStyle == 'tank' ? isKeyDown('w') : isMouseDown();
+
+		if (isWalking) {
 			player.acceleration += dt() * WALKING_ACCELERATION;
 		} else {
 			player.acceleration -= dt() * WALKING_ACCELERATION;
 		}
 
 		player.acceleration = Math.max(0, Math.min(player.acceleration, 1));
-
-		// - Rotation -
-		if (isKeyDown('a')) {
-			player.rotationAcceleration += dt() * TURNING_ACCELERATION;
-		} else if (isKeyDown('d')) {
-			player.rotationAcceleration -= dt() * TURNING_ACCELERATION;
-		} else {
-			// Deceleration
-			let pra = player.rotationAcceleration;
-			let speedDiff = dt() * TURNING_ACCELERATION;
-
-			if (pra > 0) {
-				// Positive
-				if (pra - speedDiff < 0) {
-					player.rotationAcceleration = 0;
-				} else {
-					player.rotationAcceleration -= speedDiff;
-				}
-			} else if (pra < 0) {
-				// Negative
-				if (pra + speedDiff > 0) {
-					player.rotationAcceleration = 0;
-				} else {
-					player.rotationAcceleration += speedDiff;
-				}
-			}
-		}
-
-		player.rotationAcceleration = Math.max(-1, Math.min(player.rotationAcceleration, 1));
-
-		// --- PLAYER MOVEMENT ---
-
-		player.angle -= player.rotationAcceleration * dt() * TURNING_SPEED;
 
 		let displacement = Vec2.fromAngle(player.angle - 90).scale(
 			WALKING_SPEED * SCALE * dt() * player.acceleration);
@@ -187,8 +258,20 @@ scene('game', () => {
 
 	// --- ON DRAW ---
 
+	let path = pathfind(vec2(2,3), vec2(5,21));
+
 	onDraw(() => {
 		drawWallMask();
+
+		// Pathfinding test
+		for (let i = 0; i < path.length; i++) {
+			drawRect({
+				pos: path[i].add(0.5).scale(SCALE),
+				color: RED,
+				width: 5,
+				height: 5,
+			})
+		}
 	})
 
 });
