@@ -113,7 +113,7 @@ scene('game', () => {
 
 	// - Graph creation -
 
-	let graphList = [];
+	const HITBOX_GRAPH_LIST = [];
 
 	function getTileAt(row, column) {
 		return MAP[row][column];
@@ -135,22 +135,23 @@ scene('game', () => {
 				weight = 0;
 			} else {
 				weight = 1;
-				if (isHitboxAt(row+1, column)) weight += 0.5;
-				if (isHitboxAt(row-1, column)) weight += 0.5;
-				if (isHitboxAt(row, column+1)) weight += 0.5;
-				if (isHitboxAt(row, column-1)) weight += 0.5;
+				if (isHitboxAt(row+1, column)) weight += PROXIMITY_WEIGHT_ADDITIVE;
+				if (isHitboxAt(row-1, column)) weight += PROXIMITY_WEIGHT_ADDITIVE;
+				if (isHitboxAt(row, column+1)) weight += PROXIMITY_WEIGHT_ADDITIVE;
+				if (isHitboxAt(row, column-1)) weight += PROXIMITY_WEIGHT_ADDITIVE;
 			}
 
 			graphListRow.push(weight);
 		}
-		graphList.push(graphListRow);
+		HITBOX_GRAPH_LIST.push(graphListRow);
 	}
 
-	let weightGraph = new Graph(graphList, { diagonal: true });
+	let weightGraph = new Graph(HITBOX_GRAPH_LIST, { diagonal: true });
 
 	// - Simplified function -
 
 	function pathfind(start, end) {
+		console.log(`${start}, ${end}`)
 		let convertedStart = weightGraph.grid[start.y][start.x];
 		let convertedEnd = weightGraph.grid[end.y][end.x];
 		let result = astar.search(
@@ -168,22 +169,98 @@ scene('game', () => {
 		return final;
 	}
 
-	// --- PLAYER SPAWN ---
+	// --- PATHFINDER GOAL LIST ---
+
+	const PATHFIND_GOAL_LIST = [];
+
+	for (let row = 0; row < HITBOX_GRAPH_LIST.length; row++) {
+		for (let column = 0; column < HITBOX_GRAPH_LIST[0].length; column++) {
+			let weight = HITBOX_GRAPH_LIST[row][column];
+
+			if (weight == 1) {
+				PATHFIND_GOAL_LIST.push(vec2(column, row));
+			}
+		}
+	}
+
+	// --- PLAYERS SPAWN ---
+
+	function useSpawnPoint() {
+		let spawnPoint = chooseItem(possibleSpawnPoints);
+
+		const index = possibleSpawnPoints.indexOf(spawnPoint);
+		if (index > -1) {
+			possibleSpawnPoints.splice(index, 1);
+		}
+
+		return spawnPoint;
+	}
+
+	// Spawn YOU
 
 	const player = add([
 		sprite('block'),
-		pos(chooseItem(possibleSpawnPoints)),
+		pos(useSpawnPoint()),
 		scale(SCALE/500),
 		anchor('center'),
 		rotate(0),
-		area(),
+		area({ collisionIgnore: ['player'] }),
 		body(),
+		color(GREEN),
 		{
 			acceleration: 0,
 			rotationAcceleration: 0,
 		},
 		'player'
 	])
+
+	// Spawn NPCs
+
+	function choosePathfindGoal(npc) {
+		let startTile = toTile(npc.pos);
+		let goalCandidate;
+
+		for (let i = 0; i < 1000; i++) {
+			goalCandidate = chooseItem(PATHFIND_GOAL_LIST);
+
+			if (startTile.sdist(goalCandidate) > 25) {
+				npc.pathfind.mainGoal = goalCandidate;
+				break;
+			}
+		}
+
+		npc.pathfind.path = pathfind(startTile, npc.pathfind.mainGoal);
+	}
+
+	let reamainingSpawns = possibleSpawnPoints.length;
+
+	for (let i = 0; i < reamainingSpawns; i++) {
+		let npc = add([
+			sprite('block'),
+			pos(useSpawnPoint()),
+			scale(SCALE/500),
+			anchor('center'),
+			rotate(0),
+			area({ collisionIgnore: ['player'] }),
+			body(),
+			color(RED),
+			{
+				acceleration: 0,
+				rotationTween: false,
+				fakeAngle: 0,
+				pathfind: {
+					mainGoal: vec2(0),
+					secondaryGoal: vec2(0),
+					mode: 'main',
+					path: [],
+				},
+			},
+			'player',
+			'npc'
+		])
+
+		choosePathfindGoal(npc);
+	}
 
 	// --- DEBUG TOGGLE ---
 
@@ -251,27 +328,78 @@ scene('game', () => {
 
 		player.pos = player.pos.add(displacement);
 
+		// --- NPC MOVEMENTS ---
+
+		get('npc').forEach((npc) => {
+			if (npc.pathfind.path.length == 0) {
+				// - New path -
+				choosePathfindGoal(npc);
+
+			} else {
+				// - Rotation -
+				if (npc.rotationTween) npc.rotationTween.cancel();
+	
+				let startAngle = npc.fakeAngle;
+				let endAngle = fromTile(npc.pathfind.path[0]).angle(npc.pos);
+				/* debug only */ let oldEA = endAngle;
+				if (startAngle - endAngle > 180) endAngle += 360;
+				if (startAngle - endAngle < -180) endAngle -= 360;
+	
+				npc.rotationTween = tween(
+					startAngle, endAngle,
+					AI_ROTATION_TWEEN_DURATION,
+					(v) => {
+						npc.fakeAngle = v; 
+						npc.angle = npc.fakeAngle+90;
+					},
+					easings.easeOutQuad
+				);
+	
+				// - Movement -
+				let distanceToEndAngle = Math.abs(endAngle - startAngle);
+				debug.log(`${Math.round(endAngle)} (${Math.round(oldEA)})`)
+
+				if (distanceToEndAngle < 900) {
+					let displacement = Vec2.fromAngle(npc.angle + 90).scale(
+						-WALKING_SPEED * SCALE * dt());
+			
+					npc.pos = npc.pos.add(displacement);
+				}
+	
+				// - Waypoint navigation -
+				if (toTile(npc.pos).sdist(npc.pathfind.path[0]) < 1) {
+					npc.pathfind.path.shift();
+				}
+
+			}
+		})
+
 		// --- CAMERA EFFECTS ---
 
+		camScale(0.5)
 		camPos(player.pos);
 	})
 
 	// --- ON DRAW ---
 
-	let path = pathfind(vec2(2,3), vec2(5,21));
 
 	onDraw(() => {
 		drawWallMask();
 
 		// Pathfinding test
-		for (let i = 0; i < path.length; i++) {
-			drawRect({
-				pos: path[i].add(0.5).scale(SCALE),
-				color: RED,
-				width: 5,
-				height: 5,
-			})
-		}
+		get('npc').forEach((npc) => {
+			let path = npc.pathfind.path;
+
+			for (let i = 0; i < path.length; i++) {
+				drawRect({
+					pos: path[i].add(0.5).scale(SCALE),
+					color: RED,
+					width: SCALE/10,
+					height: SCALE/10,
+					anchor: 'center',
+				})
+			}
+		})
 	})
 
 });

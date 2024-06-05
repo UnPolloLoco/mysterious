@@ -1,4 +1,7 @@
 [x] Make a graph of the map, weighted based on distance to a hitbox
-[ ] Create an AI player
-[ ] Make the AI player walk around to a random tile with the power of A*
+[x] Create an AI player
+[x] Make the AI player walk around to a random tile with the power of A*
+[ ] STOP AI CIRCLING GAH
 [ ] Make five AI players
+[ ] Add coins
+[ ] Let the AIs take detours for coins

@@ -9,6 +9,7 @@ kaboom({
 	inspectColor: [255,255,255],
 	pixelDensity: 1,
 	crisp: true,
+	logMax: 3,
 });
 
 debug.inspect = false;
@@ -17,8 +18,17 @@ const SCALE = width()/16;
 
 // --- FUNCTIONS ---
 
-function chooseItem(x) {
-	return x[Math.floor((Math.random()*x.length))];
+function chooseItem(a) {
+	return a[Math.floor((Math.random()*a.length))];
+}
+
+function toTile(v) {
+	let rawConverted = v.scale(1/SCALE).sub(0.5);
+	return vec2(Math.round(rawConverted.x), Math.round(rawConverted.y));
+}
+
+function fromTile(v) {
+	return v.add(0.5).scale(SCALE);
 }
 
 // --- SPRITES ---
