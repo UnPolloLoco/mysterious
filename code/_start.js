@@ -36,5 +36,6 @@ function fromTile(v) {
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
 
 loadSprite('block', PLACEHOLDER);
+loadSprite('coin', PLACEHOLDER);
 
 // loadRoot('sprites/');

@@ -1,7 +1,10 @@
 [x] Make a graph of the map, weighted based on distance to a hitbox
 [x] Create an AI player
 [x] Make the AI player walk around to a random tile with the power of A*
-[ ] STOP AI CIRCLING GAH
-[ ] Make five AI players
-[ ] Add coins
+[x] STOP AI CIRCLING GAH
+[x] Make five AI players
+[x] Add coins
 [ ] Let the AIs take detours for coins
+[ ] Add roles
+[ ] Attack ability
+[ ] Sheriff attack ability

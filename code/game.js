@@ -8,7 +8,9 @@ scene('game', () => {
 		return tileInfo.behavior;
 	}
 
-	var possibleSpawnPoints = [];
+	let possibleSpawnPoints = [];
+	let coinSpawnPoints = [];
+	let usedCoinSpawnPoints = [];
 
 	for (let row = 0; row < MAP.length; row++) {
 		for (let column = 0; column < MAP[row].length; column++) {
@@ -40,18 +42,25 @@ scene('game', () => {
 					tile.use(body({ isStatic: true }));
 				}
 
-				// Floor OR spawn point tile
-				if (['FLOOR', 'SPAWN'].includes(tileBehavior)) {
+				// Floor, spawn, OR coin tile
+				if (['FLOOR', 'SPAWN', 'COIN'].includes(tileBehavior)) {
 					tile.use(color(BLUE));
+
 					// Spawn tile only
 					if (tileBehavior == 'SPAWN') {
 						possibleSpawnPoints.push(tilePosition.add(SCALE/2));
+					}
+					// Coin tile only
+					if (tileBehavior == 'COIN') {
+						coinSpawnPoints.push(tilePosition);
 					}
 				}
 
 			}
 		}
 	}
+
+	const MAX_PLAYER_COUNT = possibleSpawnPoints.length;
 
 	// --- SPECIAL WALLS CREATION ---
 
@@ -183,7 +192,7 @@ scene('game', () => {
 		}
 	}
 
-	// --- PLAYERS SPAWN ---
+	// --- PERSON SPAWN ---
 
 	function useSpawnPoint() {
 		let spawnPoint = chooseItem(possibleSpawnPoints);
@@ -204,13 +213,15 @@ scene('game', () => {
 		scale(SCALE/500),
 		anchor('center'),
 		rotate(0),
-		area({ collisionIgnore: ['player'] }),
+		area({ collisionIgnore: ['person'] }),
 		body(),
-		color(GREEN),
 		{
 			acceleration: 0,
 			rotationAcceleration: 0,
+			coins: 0,
+			role: 'NONE',
 		},
+		'person',
 		'player'
 	])
 
@@ -241,13 +252,14 @@ scene('game', () => {
 			scale(SCALE/500),
 			anchor('center'),
 			rotate(0),
-			area({ collisionIgnore: ['player'] }),
+			area({ collisionIgnore: ['person'] }),
 			body(),
-			color(RED),
 			{
 				acceleration: 0,
 				rotationTween: false,
 				fakeAngle: 0,
+				coins: 0,
+				role: 'NONE',
 				pathfind: {
 					mainGoal: vec2(0),
 					secondaryGoal: vec2(0),
@@ -255,16 +267,103 @@ scene('game', () => {
 					path: [],
 				},
 			},
-			'player',
+			'person',
 			'npc'
 		])
 
 		choosePathfindGoal(npc);
 	}
 
+	// --- ROLE ASSIGNMENT ---
+
+	let murdererNumber = randi(MAX_PLAYER_COUNT);
+	let sheriffNumber;
+
+	// Get a sheriff ID that doens't match the murderer's
+	for (let i = 0; i < 100; i++) {
+		sheriffNumber = randi(MAX_PLAYER_COUNT);
+		if (sheriffNumber != murdererNumber) {
+			break;
+		}
+	}
+
+	// Assign roles
+	let iter = -1;
+	get('person').forEach((p) => {
+		iter++;
+
+		if (iter == murdererNumber) {
+			p.role = 'MURDERER';
+			p.use(color(RED));
+		} else if (iter == sheriffNumber) {
+			p.role = 'SHERIFF';
+			p.use(color(rgb(0,127,255)));
+		} else {
+			p.role = 'INNOCENT';
+			p.use(color(GREEN));
+		}
+	})
+
+	// --- COIN SPAWNING ---
+
+	function spawnCoin() {
+		wait(rand(1,5), () => {
+			let spawnPoint;
+			let isCoinSpawnable = false;
+
+			for (let i = 0; i < 100; i++) {
+				// If all spawn points are in use
+				if (usedCoinSpawnPoints.length == coinSpawnPoints.length) {
+					break;
+				}
+
+				spawnPoint = chooseItem(coinSpawnPoints);
+
+				// If spawn point is available
+				if (!usedCoinSpawnPoints.includes(spawnPoint)) {
+					isCoinSpawnable = true;
+					usedCoinSpawnPoints.push(spawnPoint);
+					break;
+				}
+			}
+
+			// Spawn the coin if all conditions are met
+			if (isCoinSpawnable) {
+				add([
+					sprite('coin'),
+					pos(spawnPoint.add(SCALE * rand(-0.4, 0.4))),
+					scale(SCALE/500),
+					color(YELLOW),
+					area(),
+					'coin',
+					{
+						spawnPoint: spawnPoint,
+					}
+				])
+			}
+
+			spawnCoin();
+		})
+	}
+
+	spawnCoin();
+
+	// - Coin collision -
+
+	onCollide('person', 'coin', (p, c) => {
+		// Take this coin's spawn point out of the in-use point list
+		const index = usedCoinSpawnPoints.indexOf(c.spawnPoint);
+		if (index > -1) {
+			usedCoinSpawnPoints.splice(index, 1);
+		}
+
+		destroy(c);
+		p.coins += 1;
+	})
+
 	// --- DEBUG TOGGLE ---
 
-	onKeyPress('space', () => {
+	onKeyPress('0', () => {
 		debug.inspect = !debug.inspect;
 	})
 
@@ -341,7 +440,6 @@ scene('game', () => {
 	
 				let startAngle = npc.fakeAngle;
 				let endAngle = fromTile(npc.pathfind.path[0]).angle(npc.pos);
-				/* debug only */ let oldEA = endAngle;
 				if (startAngle - endAngle > 180) endAngle += 360;
 				if (startAngle - endAngle < -180) endAngle -= 360;
 	
@@ -357,7 +455,6 @@ scene('game', () => {
 	
 				// - Movement -
 				let distanceToEndAngle = Math.abs(endAngle - startAngle);
-				debug.log(`${Math.round(endAngle)} (${Math.round(oldEA)})`)
 
 				if (distanceToEndAngle < 900) {
 					let displacement = Vec2.fromAngle(npc.angle + 90).scale(
@@ -382,24 +479,8 @@ scene('game', () => {
 
 	// --- ON DRAW ---
 
-
 	onDraw(() => {
 		drawWallMask();
-
-		// Pathfinding test
-		get('npc').forEach((npc) => {
-			let path = npc.pathfind.path;
-
-			for (let i = 0; i < path.length; i++) {
-				drawRect({
-					pos: path[i].add(0.5).scale(SCALE),
-					color: RED,
-					width: SCALE/10,
-					height: SCALE/10,
-					anchor: 'center',
-				})
-			}
-		})
 	})
 
 });
