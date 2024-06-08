@@ -18,17 +18,28 @@ const SCALE = width()/16;
 
 // --- FUNCTIONS ---
 
-function chooseItem(a) {
+function chooseItem(a) { // Get a random item in a list
 	return a[Math.floor((Math.random()*a.length))];
 }
 
-function toTile(v) {
+function toTile(v) { // Pixel coordinate to tile coordinate
 	let rawConverted = v.scale(1/SCALE).sub(0.5);
 	return vec2(Math.round(rawConverted.x), Math.round(rawConverted.y));
 }
 
-function fromTile(v) {
+function fromTile(v) { // Tile coordinate to pixel coordinate
 	return v.add(0.5).scale(SCALE);
+}
+
+function onScreenFrom(eye, target) { // Check if target is on screen if a camera were at the eye (16 x 9.6)
+	if (eye.x + SCALE*8 < target.x || eye.x - SCALE*8 > target.x) { return false; } 
+	else if (eye.y + SCALE*4.8 < target.y || eye.y - SCALE*4.8 > target.y) { return false; }
+
+	return true;
+}
+
+function getTileAt(row, column) { // Get map character
+	return MAP[row][column];
 }
 
 // --- SPRITES ---

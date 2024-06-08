@@ -40,11 +40,12 @@ scene('game', () => {
 				if (tileBehavior == 'HITBOX') {
 					tile.use(area());
 					tile.use(body({ isStatic: true }));
+					tile.use(color(rgb(200,200,200)));
 				}
 
 				// Floor, spawn, OR coin tile
 				if (['FLOOR', 'SPAWN', 'COIN'].includes(tileBehavior)) {
-					tile.use(color(BLUE));
+					tile.use(color(rgb(60,60,60)));
 
 					// Spawn tile only
 					if (tileBehavior == 'SPAWN') {
@@ -69,11 +70,11 @@ scene('game', () => {
 		tiles: {
 			'#': () => [
 				rect(SCALE, SCALE),
-				color(GREEN),
+				color(BLACK),
 				area(),
 				body({ isStatic: true }),
 				tile({ isObstacle: true }),
-				opacity(0.7),
+				'wall',
 			]
 		}
 	});
@@ -88,15 +89,6 @@ scene('game', () => {
 			if (hit) {
 				let point = hit.point;
 				pts.push(point);
-
-				if (false) drawRect({
-					pos: point.sub(3),
-					width: 6,
-					height: 6,
-					color: RED,
-				})
-			} else {
-				//debug.log('no point :(')
 			}
 		}
 		pts.push(pts[1]);
@@ -111,6 +103,7 @@ scene('game', () => {
 				width: (MAP[0].length + 2*edgeOffset) * SCALE,
 				height: (MAP.length + 2*edgeOffset) * SCALE,
 				color: BLACK,
+				opacity: debug.zoomOut ? 0:1,
 			}),
 			() => drawPolygon({
 				pts: pts,
@@ -123,10 +116,6 @@ scene('game', () => {
 	// - Graph creation -
 
 	const HITBOX_GRAPH_LIST = [];
-
-	function getTileAt(row, column) {
-		return MAP[row][column];
-	}
 
 	function isHitboxAt(row, column) {
 		let behavior = getBehavior(getTileAt(row, column));
@@ -160,7 +149,6 @@ scene('game', () => {
 	// - Simplified function -
 
 	function pathfind(start, end) {
-		console.log(`${start}, ${end}`)
 		let convertedStart = weightGraph.grid[start.y][start.x];
 		let convertedEnd = weightGraph.grid[end.y][end.x];
 		let result = astar.search(
@@ -191,6 +179,42 @@ scene('game', () => {
 			}
 		}
 	}
+
+	// --- COIN PATHFINDING DETOUR PREP ---
+
+	const WALL_OBJECTS = [];
+
+	get('wall', { recursive: true }).forEach((w) => {
+		WALL_OBJECTS.push(w);
+	})
+
+	function isLineOfSightBetween(eye, target) {
+		if (!onScreenFrom(eye, target)) {return false;}
+	
+		let isSightObstructed = false;
+		let sightLine = new Line(eye, target);
+		let sightLineBBox = new Rect(
+			vec2(
+				Math.min(eye.x, target.x),
+				Math.min(eye.y, target.y),
+			),
+			Math.abs(eye.x - target.x),
+			Math.abs(eye.y - target.y),
+		);
+
+		WALL_OBJECTS.forEach((wo) => {
+			let wallBBox = Rect.fromPoints(wo.pos, wo.pos.add(SCALE));
+
+			if (testRectRect(wallBBox, sightLineBBox)) {
+				if (testRectLine(wallBBox, sightLine)) {
+					isSightObstructed = true;
+				}
+			}
+		});
+
+		return !isSightObstructed;
+	}
+
 
 	// --- PERSON SPAWN ---
 
@@ -262,10 +286,13 @@ scene('game', () => {
 				role: 'NONE',
 				pathfind: {
 					mainGoal: vec2(0),
-					secondaryGoal: vec2(0),
-					mode: 'main',
+					mode: 'MAIN',
 					path: [],
-				},
+					coin: {
+						coinID: 0,
+						goal: vec2(0)
+					},
+				}
 			},
 			'person',
 			'npc'
@@ -338,6 +365,7 @@ scene('game', () => {
 					'coin',
 					{
 						spawnPoint: spawnPoint,
+						coinID: rand(),
 					}
 				])
 			}
@@ -348,7 +376,7 @@ scene('game', () => {
 
 	spawnCoin();
 
-	// - Coin collision -
+	// --- COIN COLLISION ---
 
 	onCollide('person', 'coin', (p, c) => {
 		// Take this coin's spawn point out of the in-use point list
@@ -357,14 +385,83 @@ scene('game', () => {
 			usedCoinSpawnPoints.splice(index, 1);
 		}
 
+		// Stop NPCs from tracking this coin
+		let trackerTag = `trackCoin${c.coinID}`;
+		get(trackerTag).forEach((npc) => {
+			npc.unuse(trackerTag);
+			npc.pathfind.mode = 'MAIN';
+			npc.pathfind.path = pathfind(
+				toTile(npc.pos.add(SCALE/2)),
+				npc.pathfind.mainGoal
+			);
+		})
+
 		destroy(c);
 		p.coins += 1;
 	})
+
+	// --- NPC AI COIN REROUTE ---
+
+	loop(0.5, () => {
+		let activeCoinList = [];
+		get('coin').forEach((c) => {
+			activeCoinList.push(c);
+		})
+
+		get('npc').forEach((npc) => {
+			// Not already tracking a coin
+			if (npc.pathfind.mode != 'COIN') {
+				let nearestCoin = {id: 0, sdist: 0, obj: 0};
+
+				// Find the nearest visible coin
+				for (let i = 0; i < activeCoinList.length; i++) {
+					let coin = activeCoinList[i];
+					let isCoinVisible = isLineOfSightBetween(npc.pos.add(SCALE/2), coin.pos.add(SCALE/2));
+
+					if (isCoinVisible) {
+						let sdistToCoin = npc.pos.sdist(coin.pos);
+
+						// If no nearest coin or new nearest coin
+						if (nearestCoin.id == 0 || nearestCoin.sdist > sdistToCoin) {
+							nearestCoin = {
+								id: coin.coinID,
+								sdist: sdistToCoin,
+								obj: coin,
+							}
+						}
+					}
+				}
+
+				// Coin located?
+				if (nearestCoin.id != 0) {
+					// Begin following nearest visible coin
+					npc.use(`trackCoin${nearestCoin.id}`);
+					npc.pathfind.mode = 'COIN';
+					npc.pathfind.coin.coinID = nearestCoin.id;
+					npc.pathfind.coin.goal = toTile(nearestCoin.obj.pos);
+	
+					npc.pathfind.path = pathfind(
+						toTile(npc.pos.add(SCALE/2)),
+						npc.pathfind.coin.goal
+					);
+				}
+
+			}
+		})
+	});
 
 	// --- DEBUG TOGGLE ---
 
 	onKeyPress('0', () => {
 		debug.inspect = !debug.inspect;
+	})
+	
+	debug.zoomOut = false;
+	onKeyPress('9', () => {
+		debug.zoomOut = !debug.zoomOut;
+
+		if (debug.zoomOut) { camScale(0.2); }
+		else { camScale(1); };
 	})
 
 	let movementInputStyle = ['tank', 'point'][1];
@@ -473,7 +570,6 @@ scene('game', () => {
 
 		// --- CAMERA EFFECTS ---
 
-		camScale(0.5)
 		camPos(player.pos);
 	})
 
