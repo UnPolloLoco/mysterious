@@ -6,9 +6,9 @@
 [x] Add coins
 [x] Add roles
 [x] Stop AI from having xray vision (only works if eye is topleft)
-[ ] Let the AIs take detours for coins
-[ ] General layering
-[ ] Layer wall raycast above everything
+[x] Let the AIs take detours for coins
+[x] General layering
+[ ] Turn wall raycast into a real object
 [ ] Attack ability
 [ ] Sheriff attack ability
 [ ] Murderer attack ability

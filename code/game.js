@@ -1,5 +1,14 @@
 scene('game', () => {
 
+	// --- LAYERS ---
+
+	const L = {
+		floor:   0,
+		players: 100,
+		walls:   200,
+		ui:      300,
+	}
+	
 	// --- MAP CREATION ---
 
 	function getBehavior(char) {
@@ -29,6 +38,7 @@ scene('game', () => {
 					sprite('block'),
 					scale(SCALE/500),
 					pos(tilePosition),
+					z(L.floor),
 					{
 						tile: currentTile,
 						behavior: tileBehavior,
@@ -41,6 +51,7 @@ scene('game', () => {
 					tile.use(area());
 					tile.use(body({ isStatic: true }));
 					tile.use(color(rgb(200,200,200)));
+					tile.use(z(L.walls));
 				}
 
 				// Floor, spawn, OR coin tile
@@ -239,6 +250,7 @@ scene('game', () => {
 		rotate(0),
 		area({ collisionIgnore: ['person'] }),
 		body(),
+		z(L.players + 1),
 		{
 			acceleration: 0,
 			rotationAcceleration: 0,
@@ -278,6 +290,7 @@ scene('game', () => {
 			rotate(0),
 			area({ collisionIgnore: ['person'] }),
 			body(),
+			z(L.players),
 			{
 				acceleration: 0,
 				rotationTween: false,
@@ -362,6 +375,7 @@ scene('game', () => {
 					scale(SCALE/500),
 					color(YELLOW),
 					area(),
+					z(L.players - 1),
 					'coin',
 					{
 						spawnPoint: spawnPoint,
