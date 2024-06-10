@@ -8,7 +8,6 @@
 [x] Stop AI from having xray vision (only works if eye is topleft)
 [x] Let the AIs take detours for coins
 [x] General layering
-[ ] Turn wall raycast into a real object
-[ ] Attack ability
-[ ] Sheriff attack ability
+[x] Turn wall raycast into a real object
 [ ] Murderer attack ability
+[ ] Sheriff attack ability

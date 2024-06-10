@@ -90,6 +90,27 @@ scene('game', () => {
 		}
 	});
 
+	// Vision polygon
+
+	const raycastedWallEffectMask = add([
+		pos(0,0),
+		polygon([vec2(0), vec2(300), vec2(0,300)]),
+		mask('subtract'),
+		z(L.walls + 10),
+	])
+
+	// Masked black rectangle
+
+	const raycastedWallEffect = raycastedWallEffectMask.add([
+		pos(0,0),
+		rect(
+			SCALE * MAP[0].length,
+			SCALE * MAP.length,
+		),
+		color(BLACK),
+		z(L.walls + 10),
+	])
+
 	function drawWallMask() {
 		// Thank you Kaplay Playground
 		// Raycast
@@ -104,34 +125,21 @@ scene('game', () => {
 		}
 		pts.push(pts[1]);
 
-		// Subtraction creation
+		// Subtraction edit
 
-		let edgeOffset = 1;
-
-		drawSubtracted(
-			() => drawRect({
-				pos: vec2(SCALE * -edgeOffset),
-				width: (MAP[0].length + 2*edgeOffset) * SCALE,
-				height: (MAP.length + 2*edgeOffset) * SCALE,
-				color: BLACK,
-				opacity: debug.zoomOut ? 0:1,
-			}),
-			() => drawPolygon({
-				pts: pts,
-			})
-		)
+		raycastedWallEffectMask.pts = pts;
 	}
 
 	// --- PATHFINDER PREP ---
-
-	// - Graph creation -
-
-	const HITBOX_GRAPH_LIST = [];
-
+	
 	function isHitboxAt(row, column) {
 		let behavior = getBehavior(getTileAt(row, column));
 		return ['WALL', 'HITBOX', 'NONE'].includes(behavior);
 	}
+
+	// - Graph creation -
+
+	const HITBOX_GRAPH_LIST = [];
 
 	for (let row = 0; row < MAP.length; row++) {
 		let graphListRow = [];
