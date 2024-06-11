@@ -1,6 +1,6 @@
 scene('game', () => {
 
-	// --- LAYERS ---
+	// --- LAYERS AND OTHER SETTINGS ---
 
 	const L = {
 		floor:   0,
@@ -8,6 +8,8 @@ scene('game', () => {
 		walls:   200,
 		ui:      300,
 	}
+
+	let movementInputStyle = ['tank', 'point'][1];
 	
 	// --- MAP CREATION ---
 
@@ -115,7 +117,7 @@ scene('game', () => {
 		// Thank you Kaplay Playground
 		// Raycast
 		const pts = [player.pos];
-		for (let i = 0; i < 360; i += 0.1) {
+		for (let i = 0; i < 360; i += RAYCAST_ANGLE_STEP) {
 			const hit = wallLevel.raycast(player.pos, Vec2.fromAngle(i));
 			
 			if (hit) {
@@ -251,7 +253,7 @@ scene('game', () => {
 	// Spawn YOU
 
 	const player = add([
-		sprite('block'),
+		sprite('person'),
 		pos(useSpawnPoint()),
 		scale(SCALE/500),
 		anchor('center'),
@@ -264,6 +266,10 @@ scene('game', () => {
 			rotationAcceleration: 0,
 			coins: 0,
 			role: 'NONE',
+			inventory: {
+				slots: ['BOOST', 'NONE', 'NONE'],
+				selected: 1
+			}
 		},
 		'person',
 		'player'
@@ -291,7 +297,7 @@ scene('game', () => {
 
 	for (let i = 0; i < reamainingSpawns; i++) {
 		let npc = add([
-			sprite('block'),
+			sprite('person'),
 			pos(useSpawnPoint()),
 			scale(SCALE/500),
 			anchor('center'),
@@ -305,6 +311,10 @@ scene('game', () => {
 				fakeAngle: 0,
 				coins: 0,
 				role: 'NONE',
+				inventory: {
+					slots: ['BOOST', 'NONE', 'NONE'],
+					selected: 1
+				},
 				pathfind: {
 					mainGoal: vec2(0),
 					mode: 'MAIN',
@@ -322,13 +332,43 @@ scene('game', () => {
 		choosePathfindGoal(npc);
 	}
 
+	// --- BOOSTER ---
+
+	function useBoost(who) {
+		debug.log('nyooom');
+	}
+
+	// --- INVENTORY FUNCTIONS ---
+
+	// Choose a slot
+	function selectInventorySlot(who, number) {
+		who.inventory.selected = number;
+
+		if (who == player) {
+			debug.log(`${number}: ${checkSelectedSlot(who)}`);
+		}
+	}
+
+	// Use the item in current slot
+	function useItemInSelectedSlot(who) {
+		let item = checkSelectedSlot(who);
+
+		if (item == 'BLADE') {
+			attackAttempt(who, 'MELEE');
+		} else if (item == 'BLASTER') {
+			attackAttempt(who, 'RANGED')
+		} else if (item == 'BOOST') {
+			useBoost(who);
+		}
+	}
+
 	// --- ROLE ASSIGNMENT ---
 
 	let murdererNumber = randi(MAX_PLAYER_COUNT);
 	let sheriffNumber;
 
 	// Get a sheriff ID that doens't match the murderer's
-	for (let i = 0; i < 100; i++) {
+	for (let i = 0; i < 1000; i++) {
 		sheriffNumber = randi(MAX_PLAYER_COUNT);
 		if (sheriffNumber != murdererNumber) {
 			break;
@@ -341,16 +381,52 @@ scene('game', () => {
 		iter++;
 
 		if (iter == murdererNumber) {
+			// - Murderer -
+
 			p.role = 'MURDERER';
+			p.inventory.slots[2] = 'BLADE';
 			p.use(color(RED));
 		} else if (iter == sheriffNumber) {
+			// - Sheriff -
+
 			p.role = 'SHERIFF';
+			p.inventory.slots[2] = 'BLASTER';
 			p.use(color(rgb(0,127,255)));
 		} else {
+			// - Innocent- 
+
 			p.role = 'INNOCENT';
 			p.use(color(GREEN));
 		}
 	})
+
+	// --- RESPECTIVE ATTACK INDICATORS ---
+
+	let playerMeleeIndicator;
+	let playerRangedIndicator;
+
+	if (player.role == 'MURDERER') {
+		playerMeleeIndicator = add([
+			circle(SCALE * MELEE_ATTACK_DISTANCE),
+			pos(0,0),
+			anchor('center'),
+			color(WHITE),
+			opacity(0.3),
+			z(L.players - 1),
+		])
+		
+		
+	} else if (player.role == 'SHERIFF') {
+		playerRangedIndicator = add([
+			rect(SCALE*100, SCALE*0.1),
+			pos(0,0),
+			anchor('left'),
+			rotate(0),
+			opacity(0.3),
+			color(WHITE),
+			z(L.players - 1),
+		])
+	}
 
 	// --- COIN SPAWNING ---
 
@@ -359,7 +435,7 @@ scene('game', () => {
 			let spawnPoint;
 			let isCoinSpawnable = false;
 
-			for (let i = 0; i < 100; i++) {
+			for (let i = 0; i < 1000; i++) {
 				// If all spawn points are in use
 				if (usedCoinSpawnPoints.length == coinSpawnPoints.length) {
 					break;
@@ -482,14 +558,97 @@ scene('game', () => {
 	onKeyPress('9', () => {
 		debug.zoomOut = !debug.zoomOut;
 
-		if (debug.zoomOut) { camScale(0.2); }
-		else { camScale(1); };
+		if (debug.zoomOut) {
+			camScale(0.2);
+			raycastedWallEffect.use(opacity(0.5));
+		} else { 
+			camScale(1);
+			raycastedWallEffect.use(opacity(1));
+		};
 	})
 
-	let movementInputStyle = ['tank', 'point'][1];
+	// --- DEATH FUNCTION ---
 
+	function deathEffect(victim) {
+		destroy(victim);
+		debug.log('womp womp')
+	}
+
+	// --- ATTACKING ---
+
+	function getNearestVisiblePersonTo(person) {
+		let currentNearest = {sdist: 0, obj: null};
+
+		get('person').forEach((p) => {
+			if (p != person) {
+				if (isLineOfSightBetween(person.pos, p.pos)) {
+					let sdist = person.pos.sdist(p.pos);
+					if (currentNearest.obj == null || sdist < currentNearest.sdist) {
+						currentNearest = {
+							sdist: sdist,
+							obj: p,
+						}
+					}
+				}
+			}
+		})
+
+		return currentNearest.obj;
+	}
+
+	function attackAttempt(attacker, attackStyle) {
+		if (attackStyle == 'MELEE') {
+			let victim = getNearestVisiblePersonTo(attacker);
+			
+			if (victim != null) {
+				if (attacker.pos.dist(victim.pos) <= SCALE * MELEE_ATTACK_DISTANCE) {
+					deathEffect(victim);
+				}
+			}
+		} else if (attackStyle == 'RANGED') {
+			let angle = toWorld(mousePos()).angle(attacker.pos);
+
+			add([
+				sprite('bullet'),
+				pos(attacker.pos),
+				scale(SCALE/500 * 0.5),
+				rotate(angle - 90),
+				anchor('center'),
+				move(angle, SCALE * BLASTER_BULLET_SPEED),
+				area(),
+				"bullet",
+				{
+					source: attacker,
+				}
+			])
+		}
+	}
+
+	// - Bullet collision -
+
+	onCollide('bullet', 'person', (b, p) => {
+		if (b.source != p) {
+			// If the victim was innocent, kill the sheriff
+			if (p.role != 'MURDERER') {
+				deathEffect(b.source);
+			}
+
+			deathEffect(p);
+		}
+	})
+
+	// --- KEY PRESS EVENTS ---
+
+	onKeyPress('space', () => {
+		useItemInSelectedSlot(player);
+	})
+
+	onKeyPress('1', () => { selectInventorySlot(player, 0); });
+	onKeyPress('2', () => { selectInventorySlot(player, 1); });
+	onKeyPress('3', () => { selectInventorySlot(player, 2); }); 
+
+ 
 	onUpdate(() => {
-
 		// --- PLAYER ROTATION INPUTS ---
 
 		// - Tank mode -
@@ -589,6 +748,31 @@ scene('game', () => {
 
 			}
 		})
+
+		// --- ATTACK INDICATOR VISUALS ---
+
+		// Melee indicator
+		if (playerMeleeIndicator) {
+			playerMeleeIndicator.pos = player.pos;
+
+			if (checkSelectedSlot(player) == 'BLADE') {
+				playerMeleeIndicator.opacity = 0;
+			} else {
+				playerMeleeIndicator.opacity = MELEE_INDICATOR_OPACITY;
+			}
+		}
+
+		// Ranged indicator
+		if (playerRangedIndicator) {
+			playerRangedIndicator.pos = player.pos;
+			playerRangedIndicator.angle = toWorld(mousePos()).angle(player.pos);
+
+			if (checkSelectedSlot(player) == 'BLASTER') {
+				playerRangedIndicator.opacity = 0;
+			} else {
+				playerRangedIndicator.opacity = RANGED_INDICATOR_OPACITY;
+			}
+		}
 
 		// --- CAMERA EFFECTS ---
 

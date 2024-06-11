@@ -42,11 +42,21 @@ function getTileAt(row, column) { // Get map character
 	return MAP[row][column];
 }
 
+function checkInventorySlot(who, slot) { // Check what item is in a slot
+	return who.inventory.slots[slot];
+}
+
+function checkSelectedSlot(who) { // Check selected slot item
+	return checkInventorySlot(who, who.inventory.selected);
+}
+
 // --- SPRITES ---
 
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
 
+loadSprite('person', PLACEHOLDER);
 loadSprite('block', PLACEHOLDER);
 loadSprite('coin', PLACEHOLDER);
+loadSprite('bullet', PLACEHOLDER);
 
 // loadRoot('sprites/');
