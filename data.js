@@ -14,6 +14,10 @@ const MELEE_INDICATOR_OPACITY = 0.15;
 const BLASTER_BULLET_SPEED = 20;
 const RANGED_INDICATOR_OPACITY = 0.15;
 
+const BOOST_COOLDOWN = 8;
+const BOOST_DURATION = 1.5;
+const BOOST_MULTIPLIER = 1.5;
+
 const MAP_ICON_INFO = {
 	' ': { behavior: 'NONE' },
 	'@': { behavior: 'SPAWN' },
@@ -27,7 +31,6 @@ const MAP_ICON_INFO = {
 const MAP = [
 	'###############',
 	'#%%%%%%%%%%%%%#',
-	'#.............#',
 	'#.............#',
 	'#..........@..#',
 	'#..$.o........#',

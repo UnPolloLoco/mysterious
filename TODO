@@ -12,9 +12,10 @@
 [x] Inventory
 [x] Murderer attack ability
 [x] Sheriff attack ability
-[ ] Boosts
+[x] Boosts
 [ ] Detect stationary NPCs
 [ ] NPC murderer attack
 [ ] NPC sheriff
 [ ] NPC murderer can follow people
 [ ] NPC sheriff can follow the murderer
+[ ] NPCs can use boosts

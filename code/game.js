@@ -266,6 +266,7 @@ scene('game', () => {
 			rotationAcceleration: 0,
 			coins: 0,
 			role: 'NONE',
+			lastBoostTime: -BOOST_COOLDOWN,
 			inventory: {
 				slots: ['BOOST', 'NONE', 'NONE'],
 				selected: 1
@@ -311,6 +312,7 @@ scene('game', () => {
 				fakeAngle: 0,
 				coins: 0,
 				role: 'NONE',
+				lastBoostTime: -BOOST_COOLDOWN,
 				inventory: {
 					slots: ['BOOST', 'NONE', 'NONE'],
 					selected: 1
@@ -333,9 +335,23 @@ scene('game', () => {
 	}
 
 	// --- BOOSTER ---
-
+	
 	function useBoost(who) {
-		debug.log('nyooom');
+		if (time() - who.lastBoostTime > BOOST_COOLDOWN) {
+			who.lastBoostTime = time();
+		}
+	}
+	
+	function isBoostActive(who) {
+		return (time() - who.lastBoostTime < BOOST_DURATION);
+	}
+
+	function getBoostMulti(who) {
+		if (isBoostActive(who)) {
+			return BOOST_MULTIPLIER;
+		} else {
+			return 1;
+		}
 	}
 
 	// --- INVENTORY FUNCTIONS ---
@@ -698,10 +714,11 @@ scene('game', () => {
 			player.acceleration -= dt() * WALKING_ACCELERATION;
 		}
 
+
 		player.acceleration = Math.max(0, Math.min(player.acceleration, 1));
 
 		let displacement = Vec2.fromAngle(player.angle - 90).scale(
-			WALKING_SPEED * SCALE * dt() * player.acceleration);
+			WALKING_SPEED * SCALE * dt() * player.acceleration * getBoostMulti(player));
 
 		player.pos = player.pos.add(displacement);
 
@@ -736,7 +753,7 @@ scene('game', () => {
 
 				if (distanceToEndAngle < 900) {
 					let displacement = Vec2.fromAngle(npc.angle + 90).scale(
-						-WALKING_SPEED * SCALE * dt());
+						-WALKING_SPEED * SCALE * dt() * getBoostMulti(npc));
 			
 					npc.pos = npc.pos.add(displacement);
 				}
@@ -756,9 +773,9 @@ scene('game', () => {
 			playerMeleeIndicator.pos = player.pos;
 
 			if (checkSelectedSlot(player) == 'BLADE') {
-				playerMeleeIndicator.opacity = 0;
-			} else {
 				playerMeleeIndicator.opacity = MELEE_INDICATOR_OPACITY;
+			} else {
+				playerMeleeIndicator.opacity = 0;
 			}
 		}
 
@@ -768,9 +785,9 @@ scene('game', () => {
 			playerRangedIndicator.angle = toWorld(mousePos()).angle(player.pos);
 
 			if (checkSelectedSlot(player) == 'BLASTER') {
-				playerRangedIndicator.opacity = 0;
-			} else {
 				playerRangedIndicator.opacity = RANGED_INDICATOR_OPACITY;
+			} else {
+				playerRangedIndicator.opacity = 0;
 			}
 		}
 
