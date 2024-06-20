@@ -325,6 +325,10 @@ scene('game', () => {
 						coinID: 0,
 						goal: vec2(0)
 					},
+					trapped: {
+						posHistory: [vec2(-SCALE), vec2(-SCALE), vec2(-SCALE)],
+						liberationTime: -10,
+					}
 				}
 			},
 			'person',
@@ -561,6 +565,39 @@ scene('game', () => {
 				}
 
 			}
+
+			// --- CHECK FOR TRAPPED NPCS ---
+
+			let posHistory = npc.pathfind.trapped.posHistory;
+
+			// Check if all points are near each other and the NPC
+			let isTrapped = true;
+			for (let i = 0; i < 3; i++) {
+				if (posHistory[i].sdist(npc.pos) > 0.5*SCALE*SCALE) {
+					isTrapped = false;
+				}
+			}
+
+			if (isTrapped && time() - npc.pathfind.trapped.liberationTime > 1) {
+				console.log(`TRAPPED! at ${time()}`);
+				npc.pathfind.trapped.liberationTime = time();
+				npc.rotationTween.cancel();
+				npc.rotationTween = tween(
+					npc.angle, npc.angle + 180,
+					0.5,
+					(v) => {
+						npc.angle = v;
+					},
+					easings.easeOutQuad
+				);
+
+				// Give it a new path just in case
+				choosePathfindGoal(npc);
+			}
+			
+			// Update history list and restrict length to 3
+			posHistory.push(npc.pos);
+			posHistory.shift();
 		})
 	});
 
@@ -729,7 +766,7 @@ scene('game', () => {
 				// - New path -
 				choosePathfindGoal(npc);
 
-			} else {
+			} else if (time() - npc.pathfind.trapped.liberationTime > 0.5) {
 				// - Rotation -
 				if (npc.rotationTween) npc.rotationTween.cancel();
 	
