@@ -14,8 +14,9 @@
 [x] Sheriff attack ability
 [x] Boosts
 [x] Detect stationary NPCs
-[ ] NPC murderer attack
-[ ] NPC sheriff
-[ ] NPC murderer can follow people
+[.] NPC murderer can follow people
+[x] NPC murderer keeps chasing when out of sight
+[x] NPC murderer attack
 [ ] NPC sheriff can follow the murderer
+[ ] NPC sheriff
 [ ] NPCs can use boosts

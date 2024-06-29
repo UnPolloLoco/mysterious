@@ -262,11 +262,13 @@ scene('game', () => {
 		body(),
 		z(L.players + 1),
 		{
+			isNPC: false,
 			acceleration: 0,
 			rotationAcceleration: 0,
 			coins: 0,
 			role: 'NONE',
 			lastBoostTime: -BOOST_COOLDOWN,
+			lastAttackTime: INITIAL_ATTACK_COOLDOWN,
 			inventory: {
 				slots: ['BOOST', 'NONE', 'NONE'],
 				selected: 1
@@ -307,12 +309,14 @@ scene('game', () => {
 			body(),
 			z(L.players),
 			{
+				isNPC: true,
 				acceleration: 0,
 				rotationTween: false,
 				fakeAngle: 0,
 				coins: 0,
 				role: 'NONE',
 				lastBoostTime: -BOOST_COOLDOWN,
+				lastAttackTime: INITIAL_ATTACK_COOLDOWN,
 				inventory: {
 					slots: ['BOOST', 'NONE', 'NONE'],
 					selected: 1
@@ -323,12 +327,16 @@ scene('game', () => {
 					path: [],
 					coin: {
 						coinID: 0,
-						goal: vec2(0)
+						goal: vec2(0),
 					},
 					trapped: {
 						posHistory: [vec2(-SCALE), vec2(-SCALE), vec2(-SCALE)],
 						liberationTime: -10,
-					}
+					},
+					attack: {
+						victim: null,
+						goal: vec2(0),
+					},
 				}
 			},
 			'person',
@@ -370,7 +378,7 @@ scene('game', () => {
 	}
 
 	// Use the item in current slot
-	function useItemInSelectedSlot(who) {
+	function useSelectedItem(who) {
 		let item = checkSelectedSlot(who);
 
 		if (item == 'BLADE') {
@@ -406,12 +414,18 @@ scene('game', () => {
 			p.role = 'MURDERER';
 			p.inventory.slots[2] = 'BLADE';
 			p.use(color(RED));
+
+			// Adjust cooldown
+			p.lastAttackTime -= MELEE_ATTACK_COOLDOWN;
 		} else if (iter == sheriffNumber) {
 			// - Sheriff -
 
 			p.role = 'SHERIFF';
 			p.inventory.slots[2] = 'BLASTER';
 			p.use(color(rgb(0,127,255)));
+
+			// Adjust cooldown
+			p.lastAttackTime -= RANGED_ATTACK_COOLDOWN;
 		} else {
 			// - Innocent- 
 
@@ -598,6 +612,32 @@ scene('game', () => {
 			// Update history list and restrict length to 3
 			posHistory.push(npc.pos);
 			posHistory.shift();
+
+			// --- MURDERER CHASE REROUTE ---
+
+			if (npc.role == 'MURDERER') {
+				if (isAttackCooldownDone(npc)) {
+					let visiblePeopleList = getPeopleVisibleTo(npc);
+					
+					if (visiblePeopleList.length == 1) {
+						// Alone with another
+						let newVictim = visiblePeopleList[0];
+
+						npc.pathfind.attack = {
+							victim: newVictim,
+							goal: toTile(newVictim.pos.add(SCALE/2)),
+						}
+
+						setMurdererPathToVictim(npc);
+					} else {
+						if (npc.pathfind.mode == 'MURDER' && isLineOfSightBetween(npc.pos, npc.pathfind.attack.victim.pos)) {
+							// Already chasing a visible person BUT no longer alone with victim
+							setMurdererPathToVictim(npc);
+						}
+					}
+				}
+			}
+
 		})
 	});
 
@@ -629,19 +669,29 @@ scene('game', () => {
 
 	// --- ATTACKING ---
 
-	function getNearestVisiblePersonTo(person) {
-		let currentNearest = {sdist: 0, obj: null};
+	function getPeopleVisibleTo(person) {
+		let list = [];
 
 		get('person').forEach((p) => {
-			if (p != person) {
-				if (isLineOfSightBetween(person.pos, p.pos)) {
-					let sdist = person.pos.sdist(p.pos);
-					if (currentNearest.obj == null || sdist < currentNearest.sdist) {
-						currentNearest = {
-							sdist: sdist,
-							obj: p,
-						}
-					}
+			// Visible and not itself
+			if (isLineOfSightBetween(person.pos, p.pos) && p != person) {
+				list.push(p);
+			}
+		})
+
+		return list;
+	}
+
+	function getNearestVisiblePersonTo(person) {
+		let currentNearest = {sdist: 0, obj: null};
+		let peopleList = getPeopleVisibleTo(person);
+
+		peopleList.forEach((p) => {
+			let sdist = person.pos.sdist(p.pos);
+			if (currentNearest.obj == null || sdist < currentNearest.sdist) {
+				currentNearest = {
+					sdist: sdist,
+					obj: p,
 				}
 			}
 		})
@@ -649,18 +699,48 @@ scene('game', () => {
 		return currentNearest.obj;
 	}
 
+	function setMurdererPathToVictim(who) {
+		who.pathfind.mode = 'MURDER';
+		selectInventorySlot(who, 2);
+
+		who.pathfind.attack.goal = toTile(who.pathfind.attack.victim.pos.add(SCALE/2));
+
+		who.pathfind.path = pathfind(
+			toTile(who.pos.add(SCALE/2)),
+			who.pathfind.attack.goal
+		);
+	}
+
+	function cancelMurdererAttempt(who) {
+		who.pathfind.mode = 'MAIN';
+		selectInventorySlot(who, 0);
+
+		who.pathfind.attack = {
+			victim: null,
+			goal: vec2(0),
+		}
+
+		choosePathfindGoal(who);
+	}
+
 	function attackAttempt(attacker, attackStyle) {
 		if (attackStyle == 'MELEE') {
 			let victim = getNearestVisiblePersonTo(attacker);
 			
 			if (victim != null) {
-				if (attacker.pos.dist(victim.pos) <= SCALE * MELEE_ATTACK_DISTANCE) {
+				let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
+				if (attacker.pos.sdist(victim.pos) <= attackRange**2) {
 					deathEffect(victim);
+					attacker.lastAttackTime = time();
+
+					if (attacker.isNPC) {
+						cancelMurdererAttempt(attacker);
+					}
 				}
 			}
 		} else if (attackStyle == 'RANGED') {
 			let angle = toWorld(mousePos()).angle(attacker.pos);
-
+			
 			add([
 				sprite('bullet'),
 				pos(attacker.pos),
@@ -674,6 +754,16 @@ scene('game', () => {
 					source: attacker,
 				}
 			])
+
+			attacker.lastAttackTime = time();
+		}
+	}
+	
+	function isAttackCooldownDone(who) {
+		if (who.role == 'MURDERER') {
+			return (time() - who.lastAttackTime > MELEE_ATTACK_COOLDOWN);
+		} else {
+			return (time() - who.lastAttackTime > RANGED_ATTACK_COOLDOWN);
 		}
 	}
 
@@ -693,7 +783,7 @@ scene('game', () => {
 	// --- KEY PRESS EVENTS ---
 
 	onKeyPress('space', () => {
-		useItemInSelectedSlot(player);
+		useSelectedItem(player);
 	})
 
 	onKeyPress('1', () => { selectInventorySlot(player, 0); });
@@ -763,8 +853,16 @@ scene('game', () => {
 
 		get('npc').forEach((npc) => {
 			if (npc.pathfind.path.length == 0) {
-				// - New path -
-				choosePathfindGoal(npc);
+				// - End of Path -
+				if (npc.pathfind.mode == 'MURDER') {
+					if (isLineOfSightBetween(npc.pos, npc.pathfind.attack.victim.pos)) {
+						setMurdererPathToVictim(npc);
+					} else {
+						cancelMurdererAttempt(npc);
+					}
+				} else {
+					choosePathfindGoal(npc);
+				}
 
 			} else if (time() - npc.pathfind.trapped.liberationTime > 0.5) {
 				// - Rotation -
@@ -800,6 +898,16 @@ scene('game', () => {
 					npc.pathfind.path.shift();
 				}
 
+			}
+
+			// --- MURDERER MURDERING ---
+
+			if (npc.role == 'MURDERER' && npc.pathfind.attack.victim != null) {
+				let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
+
+				if (npc.pos.sdist(npc.pathfind.attack.victim.pos) <= attackRange**2) {
+					useSelectedItem(npc);
+				}
 			}
 		})
 
