@@ -17,6 +17,11 @@
 [.] NPC murderer can follow people
 [x] NPC murderer keeps chasing when out of sight
 [x] NPC murderer attack
+[x] Gravestones
+[x] Sheriff hat drop?
+[ ] Fix cooldown
+[ ] Make sheriff NPC actually use weapon
+[ ] Stop active murderers from detouring to coins
 [ ] NPC sheriff can follow the murderer
 [ ] NPC sheriff
 [ ] NPCs can use boosts

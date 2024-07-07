@@ -403,34 +403,44 @@ scene('game', () => {
 		}
 	}
 
-	// Assign roles
+	// - Assignment Function -
+	function setRole(who, role) {
+		who.role = role;
+
+		who.inventory.slots[2] = {
+			'INNOCENT': 'NONE',
+			'MURDERER': 'BLADE',
+			'SHERIFF': 'BLASTER',
+		}[role];
+
+		who.use(color({
+			'INNOCENT': GREEN,
+			'MURDERER': RED,
+			'SHERIFF': rgb(0,127,255),
+		}[role]));
+
+		if (role == 'SHERIFF') {
+			who.lastAttackTime = -RANGED_ATTACK_COOLDOWN;
+		} else if (role == 'MURDERER') {
+			who.lastAttackTime = -MELEE_ATTACK_COOLDOWN;
+		}
+	}
+
+	// - Assign Roles -
 	let iter = -1;
 	get('person').forEach((p) => {
 		iter++;
 
 		if (iter == murdererNumber) {
-			// - Murderer -
+			setRole(p, 'MURDERER');
+			p.lastAttackTime += INITIAL_ATTACK_COOLDOWN;
 
-			p.role = 'MURDERER';
-			p.inventory.slots[2] = 'BLADE';
-			p.use(color(RED));
-
-			// Adjust cooldown
-			p.lastAttackTime -= MELEE_ATTACK_COOLDOWN;
 		} else if (iter == sheriffNumber) {
-			// - Sheriff -
+			setRole(p, 'SHERIFF');
+			p.lastAttackTime += INITIAL_ATTACK_COOLDOWN;
 
-			p.role = 'SHERIFF';
-			p.inventory.slots[2] = 'BLASTER';
-			p.use(color(rgb(0,127,255)));
-
-			// Adjust cooldown
-			p.lastAttackTime -= RANGED_ATTACK_COOLDOWN;
 		} else {
-			// - Innocent- 
-
-			p.role = 'INNOCENT';
-			p.use(color(GREEN));
+			setRole(p, 'INNOCENT');
 		}
 	})
 
@@ -663,6 +673,33 @@ scene('game', () => {
 	// --- DEATH FUNCTION ---
 
 	function deathEffect(victim) {
+		let centerPos = victim.pos.add(SCALE/2);
+
+		add([
+			sprite('gravestone'), 
+			pos(centerPos),
+			anchor('center'),
+			scale(SCALE/500 * 0.6),
+			z(L.floor + 5),
+			area(),
+			color(rgb(127,127,127)),
+		])
+
+		if (victim.role == 'SHERIFF') {
+			add([
+				sprite('sheriffDrop'),
+				pos(centerPos),
+				anchor('center'),
+				scale(SCALE/500 * 0.4),
+				z(L.floor + 6),
+				area(),
+				color(BLUE),
+				"sheriffDrop"
+			])
+
+			debug.log('sheriff has perished D:')
+		}
+
 		destroy(victim);
 		debug.log('womp womp')
 	}
@@ -777,6 +814,15 @@ scene('game', () => {
 			}
 
 			deathEffect(p);
+		}
+	})
+
+	// --- SHERIFF DROP COLLECTION ---
+
+	onCollide('person', 'sheriffDrop', (p, sd) => {
+		if (p.role == 'INNOCENT') {
+			destroy(sd);
+			setRole(p, 'SHERIFF')
 		}
 	})
 

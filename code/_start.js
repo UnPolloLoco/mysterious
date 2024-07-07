@@ -58,5 +58,7 @@ loadSprite('person', PLACEHOLDER);
 loadSprite('block', PLACEHOLDER);
 loadSprite('coin', PLACEHOLDER);
 loadSprite('bullet', PLACEHOLDER);
+loadSprite('gravestone', PLACEHOLDER);
+loadSprite('sheriffDrop', PLACEHOLDER);
 
 // loadRoot('sprites/');
