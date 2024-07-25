@@ -22,6 +22,15 @@ const BOOST_COOLDOWN = 8;
 const BOOST_DURATION = 1.5;
 const BOOST_MULTIPLIER = 1.5;
 
+const PATHFIND_MODE_PRIORITY = {
+	'MAIN': 0,
+	'COIN': 1,
+	'MURDER': 2,
+	'GET_HAT': 2,
+	'PURSUIT_MURDERER': 3,
+	'ESCAPE': 4,
+}
+
 const MAP_ICON_INFO = {
 	' ': { behavior: 'NONE' },
 	'@': { behavior: 'SPAWN' },

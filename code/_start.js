@@ -50,6 +50,10 @@ function checkSelectedSlot(who) { // Check selected slot item
 	return checkInventorySlot(who, who.inventory.selected);
 }
 
+function getModePriority(mode) {
+	return PATHFIND_MODE_PRIORITY[mode];
+}
+
 // --- SPRITES ---
 
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';

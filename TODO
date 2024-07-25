@@ -14,14 +14,15 @@
 [x] Sheriff attack ability
 [x] Boosts
 [x] Detect stationary NPCs
-[.] NPC murderer can follow people
+[x] NPC murderer can follow people
 [x] NPC murderer keeps chasing when out of sight
 [x] NPC murderer attack
 [x] Gravestones
 [x] Sheriff hat drop?
-[ ] Fix cooldown
-[ ] Make sheriff NPC actually use weapon
-[ ] Stop active murderers from detouring to coins
-[ ] NPC sheriff can follow the murderer
-[ ] NPC sheriff
-[ ] NPCs can use boosts
+[ ] Rework secondary goals
+[x] Make innocent NPCs chase the dropped sheriff hats
+[x] Fix cooldown
+[x] Stop active murderers from detouring to coins
+[ ] Begin a suspicion system
+[ ] Let NPC sheriff pursue and attack
+[ ] Let NPCs use boosts

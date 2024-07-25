@@ -9,6 +9,11 @@ scene('game', () => {
 		ui:      300,
 	}
 
+	const GAME_STATE = {
+		isSheriffHatDropped: false,
+		droppedSheriffHat: null,
+	}
+
 	let movementInputStyle = ['tank', 'point'][1];
 	
 	// --- MAP CREATION ---
@@ -337,6 +342,9 @@ scene('game', () => {
 						victim: null,
 						goal: vec2(0),
 					},
+					getHat: {
+						goal: vec2(0),
+					},
 				}
 			},
 			'person',
@@ -552,7 +560,7 @@ scene('game', () => {
 
 		get('npc').forEach((npc) => {
 			// Not already tracking a coin
-			if (npc.pathfind.mode != 'COIN') {
+			if (getModePriority(npc.pathfind.mode) < getModePriority('COIN')) {
 				let nearestCoin = {id: 0, sdist: 0, obj: 0};
 
 				// Find the nearest visible coin
@@ -646,6 +654,21 @@ scene('game', () => {
 						}
 					}
 				}
+
+			// --- REROUTE TO SHERIFF HAT ---
+
+			} else { 
+				if (GAME_STATE.isSheriffHatDropped && isLineOfSightBetween(npc.pos, GAME_STATE.droppedSheriffHat.pos)) {
+					// If innocent and the hat exists in view...
+					if (getModePriority(npc.pathfind.mode) < getModePriority('GET_HAT')) {
+						npc.pathfind.mode = 'GET_HAT';
+						npc.pathfind.getHat.goal = toTile(GAME_STATE.droppedSheriffHat.pos);
+						npc.pathfind.path = pathfind(
+							toTile(npc.pos.add(SCALE/2)),
+							npc.pathfind.getHat.goal
+						);
+					}
+				}
 			}
 
 		})
@@ -673,7 +696,7 @@ scene('game', () => {
 	// --- DEATH FUNCTION ---
 
 	function deathEffect(victim) {
-		let centerPos = victim.pos.add(SCALE/2);
+		let centerPos = victim.pos;//.add(SCALE/2);
 
 		add([
 			sprite('gravestone'), 
@@ -686,7 +709,7 @@ scene('game', () => {
 		])
 
 		if (victim.role == 'SHERIFF') {
-			add([
+			let hat = add([
 				sprite('sheriffDrop'),
 				pos(centerPos),
 				anchor('center'),
@@ -697,6 +720,8 @@ scene('game', () => {
 				"sheriffDrop"
 			])
 
+			GAME_STATE.isSheriffHatDropped = true;
+			GAME_STATE.droppedSheriffHat = hat;
 			debug.log('sheriff has perished D:')
 		}
 
@@ -761,38 +786,40 @@ scene('game', () => {
 	}
 
 	function attackAttempt(attacker, attackStyle) {
-		if (attackStyle == 'MELEE') {
-			let victim = getNearestVisiblePersonTo(attacker);
-			
-			if (victim != null) {
-				let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
-				if (attacker.pos.sdist(victim.pos) <= attackRange**2) {
-					deathEffect(victim);
-					attacker.lastAttackTime = time();
+		if (isAttackCooldownDone(attacker)) {
+			if (attackStyle == 'MELEE') {
+				let victim = getNearestVisiblePersonTo(attacker);
+				
+				if (victim != null) {
+					let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
+					if (attacker.pos.sdist(victim.pos) <= attackRange**2) {
+						deathEffect(victim);
+						attacker.lastAttackTime = time();
 
-					if (attacker.isNPC) {
-						cancelMurdererAttempt(attacker);
+						if (attacker.isNPC) {
+							cancelMurdererAttempt(attacker);
+						}
 					}
 				}
-			}
-		} else if (attackStyle == 'RANGED') {
-			let angle = toWorld(mousePos()).angle(attacker.pos);
-			
-			add([
-				sprite('bullet'),
-				pos(attacker.pos),
-				scale(SCALE/500 * 0.5),
-				rotate(angle - 90),
-				anchor('center'),
-				move(angle, SCALE * BLASTER_BULLET_SPEED),
-				area(),
-				"bullet",
-				{
-					source: attacker,
-				}
-			])
+			} else if (attackStyle == 'RANGED') {
+				let angle = toWorld(mousePos()).angle(attacker.pos);
+				
+				add([
+					sprite('bullet'),
+					pos(attacker.pos),
+					scale(SCALE/500 * 0.5),
+					rotate(angle - 90),
+					anchor('center'),
+					move(angle, SCALE * BLASTER_BULLET_SPEED),
+					area(),
+					"bullet",
+					{
+						source: attacker,
+					}
+				])
 
-			attacker.lastAttackTime = time();
+				attacker.lastAttackTime = time();
+			}
 		}
 	}
 	
@@ -814,6 +841,7 @@ scene('game', () => {
 			}
 
 			deathEffect(p);
+			destroy(b);
 		}
 	})
 
@@ -823,6 +851,8 @@ scene('game', () => {
 		if (p.role == 'INNOCENT') {
 			destroy(sd);
 			setRole(p, 'SHERIFF')
+			GAME_STATE.isSheriffHatDropped = false;
+			GAME_STATE.droppedSheriffHat = null;
 		}
 	})
 
