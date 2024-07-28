@@ -27,7 +27,7 @@ const PATHFIND_MODE_PRIORITY = {
 	'COIN': 1,
 	'MURDER': 2,
 	'GET_HAT': 2,
-	'PURSUIT_MURDERER': 3,
+	'GET_SUSPECT': 3,
 	'ESCAPE': 4,
 }
 

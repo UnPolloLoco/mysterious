@@ -322,6 +322,10 @@ scene('game', () => {
 				role: 'NONE',
 				lastBoostTime: -BOOST_COOLDOWN,
 				lastAttackTime: INITIAL_ATTACK_COOLDOWN,
+				witness: {
+					suspect: null,
+					timestamp: null,
+				},
 				inventory: {
 					slots: ['BOOST', 'NONE', 'NONE'],
 					selected: 1
@@ -343,6 +347,9 @@ scene('game', () => {
 						goal: vec2(0),
 					},
 					getHat: {
+						goal: vec2(0),
+					},
+					justice: {
 						goal: vec2(0),
 					},
 				}
@@ -550,6 +557,28 @@ scene('game', () => {
 		p.coins += 1;
 	})
 
+	// --- JUSTICE FUNCTIONS ---
+
+	function attemptPursuit(who) {
+		debug.log('attempt pursuit')
+		who.pathfind.mode = 'GET_SUSPECT';
+		who.pathfind.justice = {
+			goal: toTile(who.witness.suspect.pos),
+		}
+		who.pathfind.path = pathfind(
+			toTile(who.pos.add(SCALE/2)),
+			who.pathfind.justice.goal
+		);
+	}
+
+	function cancelPursuit(who) {
+		debug.log('CANCEL pursuit')
+		who.pathfind.mode = 'MAIN';
+		who.pathfind.justice.goal = vec2(0);
+
+		choosePathfindGoal(who);
+	}
+
 	// --- NPC AI COIN REROUTE ---
 
 	loop(0.5, () => {
@@ -669,6 +698,26 @@ scene('game', () => {
 						);
 					}
 				}
+
+				// If suspect in sight
+				if (npc.witness.suspect && isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
+					
+					// --- REROUTE TO SUSPECT ---
+					
+					if (isAttackCooldownDone(npc)) {
+						if (npc.role == 'SHERIFF') { // temp
+							if (getModePriority(npc.pathfind.mode) < getModePriority('GET_SUSPECT')) {
+								attemptPursuit(npc);
+							}
+						}
+
+					} else {
+
+						// --- ESCAPE THE SUSPECT ---
+
+						// todo...
+					}
+				}
 			}
 
 		})
@@ -693,8 +742,31 @@ scene('game', () => {
 		};
 	})
 
-	// --- DEATH FUNCTION ---
+	// --- DEATH FUNCTIONS ---
 
+	function murderEvent(victim, murderer) {
+		if (murderer) witnessCheck(victim, murderer);
+		deathEffect(victim);
+	}
+
+	// - Witness and suspect control -
+	function witnessCheck(victim, murderer) {
+		let witnesses = getPeopleVisibleTo(victim);
+
+		debug.log(`witnesses: ${witnesses.length}`)
+		for (let i = 0; i < witnesses.length; i++) {
+			let witness = witnesses[i];
+
+			if (witness != murderer) {
+				if (isLineOfSightBetween(witness.pos, murderer.pos)) {
+					// If the witness can see both the victim and murderer...
+					witness.witness.suspect = murderer;
+				}
+			}
+		}
+	}
+	
+	// - Grvaestones and other effects -
 	function deathEffect(victim) {
 		let centerPos = victim.pos;//.add(SCALE/2);
 
@@ -793,7 +865,7 @@ scene('game', () => {
 				if (victim != null) {
 					let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
 					if (attacker.pos.sdist(victim.pos) <= attackRange**2) {
-						deathEffect(victim);
+						murderEvent(victim, attacker);
 						attacker.lastAttackTime = time();
 
 						if (attacker.isNPC) {
@@ -837,10 +909,10 @@ scene('game', () => {
 		if (b.source != p) {
 			// If the victim was innocent, kill the sheriff
 			if (p.role != 'MURDERER') {
-				deathEffect(b.source);
+				murderEvent(b.source, null);
 			}
 
-			deathEffect(p);
+			murderEvent(p, null);
 			destroy(b);
 		}
 	})
@@ -925,25 +997,37 @@ scene('game', () => {
 
 		player.pos = player.pos.add(displacement);
 
-		// --- NPC MOVEMENTS ---
-
+		// --- END OF PATH BEHAVIOR ---
+		
 		get('npc').forEach((npc) => {
 			if (npc.pathfind.path.length == 0) {
-				// - End of Path -
+				// - Murderer -
 				if (npc.pathfind.mode == 'MURDER') {
 					if (isLineOfSightBetween(npc.pos, npc.pathfind.attack.victim.pos)) {
 						setMurdererPathToVictim(npc);
 					} else {
 						cancelMurdererAttempt(npc);
 					}
+
+				// - Suspect-chaser -
+				} else if (npc.pathfind.mode == 'GET_SUSPECT') {
+					if (isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
+						attemptPursuit(npc);
+					} else {
+						cancelPursuit(npc);
+					}
+
+				// - Average innocent -
 				} else {
 					choosePathfindGoal(npc);
 				}
 
+			// --- NPC MOVEMENTS ---
+				
 			} else if (time() - npc.pathfind.trapped.liberationTime > 0.5) {
 				// - Rotation -
 				if (npc.rotationTween) npc.rotationTween.cancel();
-	
+				
 				let startAngle = npc.fakeAngle;
 				let endAngle = fromTile(npc.pathfind.path[0]).angle(npc.pos);
 				if (startAngle - endAngle > 180) endAngle += 360;

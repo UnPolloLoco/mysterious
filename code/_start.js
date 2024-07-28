@@ -14,7 +14,8 @@ kaboom({
 
 debug.inspect = false;
 
-const SCALE = width()/16;
+const SCALE_DIVISOR = 32;
+const SCALE = width()/SCALE_DIVISOR;
 
 // --- FUNCTIONS ---
 
@@ -31,9 +32,12 @@ function fromTile(v) { // Tile coordinate to pixel coordinate
 	return v.add(0.5).scale(SCALE);
 }
 
-function onScreenFrom(eye, target) { // Check if target is on screen if a camera were at the eye (16 x 9.6)
-	if (eye.x + SCALE*8 < target.x || eye.x - SCALE*8 > target.x) { return false; } 
-	else if (eye.y + SCALE*4.8 < target.y || eye.y - SCALE*4.8 > target.y) { return false; }
+function onScreenFrom(eye, target) { // Check if target is on screen if a camera were at the eye
+	let sd2 = SCALE_DIVISOR / 2;
+	let sdr2 = sd2 * SCREEN_RATIO;
+
+	if (eye.x + SCALE*sd2 < target.x || eye.x - SCALE*sd2 > target.x) { return false; } 
+	else if (eye.y + SCALE*sdr2 < target.y || eye.y - SCALE*sdr2 > target.y) { return false; }
 
 	return true;
 }

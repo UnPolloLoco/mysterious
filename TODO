@@ -19,10 +19,12 @@
 [x] NPC murderer attack
 [x] Gravestones
 [x] Sheriff hat drop?
-[ ] Rework secondary goals
 [x] Make innocent NPCs chase the dropped sheriff hats
 [x] Fix cooldown
 [x] Stop active murderers from detouring to coins
-[ ] Begin a suspicion system
-[ ] Let NPC sheriff pursue and attack
-[ ] Let NPCs use boosts
+[x] Let sheriff pursue suspects (7-28)
+[ ] Let sheriff attack (7-29)
+[ ] Rework secondary goals (7-31)
+[ ] Make innocents flee the crime scene (8-3)
+[ ] Let NPCs use boosts (8-4)
+[ ] Make a better suspicion system (8-5)
