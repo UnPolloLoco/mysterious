@@ -753,11 +753,11 @@ scene('game', () => {
 	function witnessCheck(victim, murderer) {
 		let witnesses = getPeopleVisibleTo(victim);
 
-		debug.log(`witnesses: ${witnesses.length}`)
+		debug.log(`witnesses: ${witnesses.length - 1}`)
 		for (let i = 0; i < witnesses.length; i++) {
 			let witness = witnesses[i];
 
-			if (witness != murderer) {
+			if (witness != murderer && witness != player) {
 				if (isLineOfSightBetween(witness.pos, murderer.pos)) {
 					// If the witness can see both the victim and murderer...
 					witness.witness.suspect = murderer;
