@@ -24,9 +24,10 @@
 [x] Stop active murderers from detouring to coins
 [x] Let sheriff pursue suspects
 [x] Let sheriff attack
-[ ] Rework secondary goals (7-31)
-[ ] Make innocents flee the crime scene (8-3)
-[ ] Let NPCs use boosts (8-4)
-[ ] Improve sheriff NPC aim (8-6)
+[x] Rework secondary goals
+[ ] Make innocents flee the crime scene (7-31)
+[ ] Let NPCs use boosts (8-2)
+[ ] Improve sheriff NPC aim (8-4)
+[ ] Let innocents arm themselves with enough coins
 [ ] Make a better suspicion system 
 [ ] Make the murderer more sneaky

@@ -334,13 +334,18 @@ scene('game', () => {
 					mainGoal: vec2(0),
 					mode: 'MAIN',
 					path: [],
-					coin: {
-						coinID: 0,
-						goal: vec2(0),
-					},
 					trapped: {
 						posHistory: [vec2(-SCALE), vec2(-SCALE), vec2(-SCALE)],
 						liberationTime: -10,
+					},
+					secondary: {
+						goal: vec2(0),	// generic
+						coinID: 0,		// coin chaser
+						victim: null,	// attack
+					},
+					coin: {
+						coinID: 0,
+						goal: vec2(0),
 					},
 					attack: {
 						victim: null,
@@ -563,12 +568,10 @@ scene('game', () => {
 		selectInventorySlot(who, 2);
 
 		who.pathfind.mode = 'GET_SUSPECT';
-		who.pathfind.justice = {
-			goal: toTile(who.witness.suspect.pos),
-		}
+		who.pathfind.secondary.goal = toTile(who.witness.suspect.pos);
 		who.pathfind.path = pathfind(
 			toTile(who.pos.add(SCALE/2)),
-			who.pathfind.justice.goal
+			who.pathfind.secondary.goal
 		);
 	}
 
@@ -576,7 +579,7 @@ scene('game', () => {
 		selectInventorySlot(who, 1);
 
 		who.pathfind.mode = 'MAIN';
-		who.pathfind.justice.goal = vec2(0);
+		who.pathfind.secondary.goal = vec2(0);
 
 		choosePathfindGoal(who);
 	}
@@ -618,12 +621,12 @@ scene('game', () => {
 					// Begin following nearest visible coin
 					npc.use(`trackCoin${nearestCoin.id}`);
 					npc.pathfind.mode = 'COIN';
-					npc.pathfind.coin.coinID = nearestCoin.id;
-					npc.pathfind.coin.goal = toTile(nearestCoin.obj.pos);
+					npc.pathfind.secondary.coinID = nearestCoin.id;
+					npc.pathfind.secondary.goal = toTile(nearestCoin.obj.pos);
 	
 					npc.pathfind.path = pathfind(
 						toTile(npc.pos.add(SCALE/2)),
-						npc.pathfind.coin.goal
+						npc.pathfind.secondary.goal
 					);
 				}
 
@@ -672,14 +675,12 @@ scene('game', () => {
 						// Alone with another
 						let newVictim = visiblePeopleList[0];
 
-						npc.pathfind.attack = {
-							victim: newVictim,
-							goal: toTile(newVictim.pos.add(SCALE/2)),
-						}
+						npc.pathfind.secondary.victim = newVictim;
+						npc.pathfind.secondary.goal = toTile(newVictim.pos.add(SCALE/2));
 
 						setMurdererPathToVictim(npc);
 					} else {
-						if (npc.pathfind.mode == 'MURDER' && isLineOfSightBetween(npc.pos, npc.pathfind.attack.victim.pos)) {
+						if (npc.pathfind.mode == 'MURDER' && isLineOfSightBetween(npc.pos, npc.pathfind.secondary.victim.pos)) {
 							// Already chasing a visible person BUT no longer alone with victim
 							setMurdererPathToVictim(npc);
 						}
@@ -693,10 +694,10 @@ scene('game', () => {
 					// If innocent and the hat exists in view...
 					if (getModePriority(npc.pathfind.mode) < getModePriority('GET_HAT')) {
 						npc.pathfind.mode = 'GET_HAT';
-						npc.pathfind.getHat.goal = toTile(GAME_STATE.droppedSheriffHat.pos);
+						npc.pathfind.secondary.goal = toTile(GAME_STATE.droppedSheriffHat.pos);
 						npc.pathfind.path = pathfind(
 							toTile(npc.pos.add(SCALE/2)),
-							npc.pathfind.getHat.goal
+							npc.pathfind.secondary.goal
 						);
 					}
 				}
@@ -846,11 +847,11 @@ scene('game', () => {
 		who.pathfind.mode = 'MURDER';
 		selectInventorySlot(who, 2);
 
-		who.pathfind.attack.goal = toTile(who.pathfind.attack.victim.pos.add(SCALE/2));
+		who.pathfind.secondary.goal = toTile(who.pathfind.secondary.victim.pos.add(SCALE/2));
 
 		who.pathfind.path = pathfind(
 			toTile(who.pos.add(SCALE/2)),
-			who.pathfind.attack.goal
+			who.pathfind.secondary.goal
 		);
 	}
 
@@ -858,10 +859,8 @@ scene('game', () => {
 		who.pathfind.mode = 'MAIN';
 		selectInventorySlot(who, 1);
 
-		who.pathfind.attack = {
-			victim: null,
-			goal: vec2(0),
-		}
+		who.pathfind.secondary.goal = vec2(0);
+		who.pathfind.secondary.victim = null;
 
 		choosePathfindGoal(who);
 	}
@@ -1016,7 +1015,7 @@ scene('game', () => {
 			if (npc.pathfind.path.length == 0) {
 				// - Murderer -
 				if (npc.pathfind.mode == 'MURDER') {
-					if (isLineOfSightBetween(npc.pos, npc.pathfind.attack.victim.pos)) {
+					if (isLineOfSightBetween(npc.pos, npc.pathfind.secondary.victim.pos)) {
 						setMurdererPathToVictim(npc);
 					} else {
 						cancelMurdererAttempt(npc);
@@ -1075,10 +1074,10 @@ scene('game', () => {
 
 			// --- MURDERER MURDERING ---
 
-			if (npc.role == 'MURDERER' && npc.pathfind.attack.victim != null) {
+			if (npc.role == 'MURDERER' && npc.pathfind.secondary.victim != null) {
 				let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
 
-				if (npc.pos.sdist(npc.pathfind.attack.victim.pos) <= attackRange**2) {
+				if (npc.pos.sdist(npc.pathfind.secondary.victim.pos) <= attackRange**2) {
 					useSelectedItem(npc);
 				}
 			}
