@@ -584,6 +584,26 @@ scene('game', () => {
 		choosePathfindGoal(who);
 	}
 
+	function prepareEscapePath(who) {
+		if (who.pathfind.path.length >= 2) {
+			for (let i = 0; i < 100; i++) {
+				let nextNode = fromTile(who.pathfind.path[1]);
+				let sPos = who.witness.suspect.pos;
+
+				// If approaching suspect (that's bad)
+				if (who.pos.sdist(sPos) > nextNode.sdist(sPos)) {
+					choosePathfindGoal(who);
+				} else {
+					who.mode = 'ESCAPE';
+					break;
+				}
+			}
+		} else {
+			choosePathfindGoal(who);
+			prepareEscapePath(who);
+		}
+	}
+
 	// --- NPC AI COIN REROUTE ---
 
 	loop(0.5, () => {
@@ -617,7 +637,7 @@ scene('game', () => {
 				}
 
 				// Coin located?
-				if (nearestCoin.id != 0) {
+				if (nearestCoin.id != 0 && getModePriority(npc.mode) < getModePriority('COIN')) {
 					// Begin following nearest visible coin
 					npc.use(`trackCoin${nearestCoin.id}`);
 					npc.pathfind.mode = 'COIN';
@@ -714,7 +734,7 @@ scene('game', () => {
 					
 					// --- PURSUIT SUSPECT ---
 					
-					if (isAttackCooldownDone(npc)) {
+					if (isAttackCooldownDone(npc) && npc.inventory.slots[2] != 'NONE') {
 						if (npc.role == 'SHERIFF') { // temp
 							if (getModePriority(npc.pathfind.mode) < getModePriority('GET_SUSPECT')) {
 								attemptPursuit(npc);
@@ -725,7 +745,8 @@ scene('game', () => {
 
 						// --- ESCAPE THE SUSPECT ---
 
-						// todo...
+						prepareEscapePath(npc);
+						
 					}
 				}
 			}
@@ -771,6 +792,7 @@ scene('game', () => {
 				if (isLineOfSightBetween(witness.pos, murderer.pos)) {
 					// If the witness can see both the victim and murderer...
 					witness.witness.suspect = murderer;
+					prepareEscapePath(witness);
 				}
 			}
 		}
@@ -1029,6 +1051,14 @@ scene('game', () => {
 						cancelPursuit(npc);
 					}
 
+				} else if (npc.mode == 'ESCAPE') {
+					if (isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
+						prepareEscapePath(npc);
+					} else {
+						npc.mode = 'MAIN';
+						choosePathfindGoal(npc);
+					}
+					
 				// - Average innocent -
 				} else {
 					choosePathfindGoal(npc);
