@@ -23,8 +23,9 @@
 [x] Fix cooldown
 [x] Stop active murderers from detouring to coins
 [x] Let sheriff pursue suspects
-[ ] Let sheriff attack (7-29)
+[x] Let sheriff attack
 [ ] Rework secondary goals (7-31)
 [ ] Make innocents flee the crime scene (8-3)
 [ ] Let NPCs use boosts (8-4)
-[ ] Make a better suspicion system (8-5)
+[ ] Make a better suspicion system 
+[ ] Make the murderer more sneaky

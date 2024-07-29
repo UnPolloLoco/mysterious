@@ -560,7 +560,8 @@ scene('game', () => {
 	// --- JUSTICE FUNCTIONS ---
 
 	function attemptPursuit(who) {
-		debug.log('attempt pursuit')
+		selectInventorySlot(who, 2);
+
 		who.pathfind.mode = 'GET_SUSPECT';
 		who.pathfind.justice = {
 			goal: toTile(who.witness.suspect.pos),
@@ -572,7 +573,8 @@ scene('game', () => {
 	}
 
 	function cancelPursuit(who) {
-		debug.log('CANCEL pursuit')
+		selectInventorySlot(who, 1);
+
 		who.pathfind.mode = 'MAIN';
 		who.pathfind.justice.goal = vec2(0);
 
@@ -699,10 +701,17 @@ scene('game', () => {
 					}
 				}
 
-				// If suspect in sight
+				// --- ATTACK SUSPECT ---
+
+				if (npc.pathfind.mode == 'GET_SUSPECT' && isAttackCooldownDone(npc) && isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
+					npc.angle = npc.witness.suspect.pos.angle(npc.pos);
+					useSelectedItem(npc);
+				}
+
+				// If suspect in sight...
 				if (npc.witness.suspect && isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
 					
-					// --- REROUTE TO SUSPECT ---
+					// --- PURSUIT SUSPECT ---
 					
 					if (isAttackCooldownDone(npc)) {
 						if (npc.role == 'SHERIFF') { // temp
@@ -734,7 +743,7 @@ scene('game', () => {
 		debug.zoomOut = !debug.zoomOut;
 
 		if (debug.zoomOut) {
-			camScale(0.2);
+			camScale(0.4);
 			raycastedWallEffect.use(opacity(0.5));
 		} else { 
 			camScale(1);
@@ -847,7 +856,7 @@ scene('game', () => {
 
 	function cancelMurdererAttempt(who) {
 		who.pathfind.mode = 'MAIN';
-		selectInventorySlot(who, 0);
+		selectInventorySlot(who, 1);
 
 		who.pathfind.attack = {
 			victim: null,
@@ -915,6 +924,10 @@ scene('game', () => {
 			murderEvent(p, null);
 			destroy(b);
 		}
+	})
+
+	onCollide('bullet', 'wall', (b, w) => {
+		destroy(b);
 	})
 
 	// --- SHERIFF DROP COLLECTION ---
