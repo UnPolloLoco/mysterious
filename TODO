@@ -26,8 +26,11 @@
 [x] Let sheriff attack
 [x] Rework secondary goals
 [x] Make innocents flee the crime scene
-[ ] Let NPCs use boosts (7-31)
-[ ] Improve sheriff NPC aim (8-2)
-[ ] Let innocents arm themselves with enough coins
+[x] Let innocent/sheriff NPCs use boosts
+[ ] Improve sheriff NPC aim (8-1)
+[ ] Add an armory that arms innocents (8-3)
+[ ] Let NPCs use the armory (8-4)
+[ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 
 [ ] Make the murderer more sneaky
+[ ] Lights sabotage and renewal?

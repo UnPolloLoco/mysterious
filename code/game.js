@@ -343,20 +343,6 @@ scene('game', () => {
 						coinID: 0,		// coin chaser
 						victim: null,	// attack
 					},
-					coin: {
-						coinID: 0,
-						goal: vec2(0),
-					},
-					attack: {
-						victim: null,
-						goal: vec2(0),
-					},
-					getHat: {
-						goal: vec2(0),
-					},
-					justice: {
-						goal: vec2(0),
-					},
 				}
 			},
 			'person',
@@ -433,11 +419,14 @@ scene('game', () => {
 			'SHERIFF': 'BLASTER',
 		}[role];
 
-		who.use(color({
-			'INNOCENT': GREEN,
-			'MURDERER': RED,
-			'SHERIFF': rgb(0,127,255),
-		}[role]));
+		if (true) {
+		//if (who.is('player') || who.role == 'SHERIFF') {
+			who.use(color({
+				'INNOCENT': GREEN,
+				'MURDERER': RED,
+				'SHERIFF': rgb(0,127,255),
+			}[role]));
+		}
 
 		if (role == 'SHERIFF') {
 			who.lastAttackTime = -RANGED_ATTACK_COOLDOWN;
@@ -573,6 +562,10 @@ scene('game', () => {
 			toTile(who.pos.add(SCALE/2)),
 			who.pathfind.secondary.goal
 		);
+
+		if (who.pos.dist(who.witness.suspect.pos) > SCALE*6) {
+			useBoost(who);
+		}
 	}
 
 	function cancelPursuit(who) {
@@ -582,6 +575,15 @@ scene('game', () => {
 		who.pathfind.secondary.goal = vec2(0);
 
 		choosePathfindGoal(who);
+	}
+
+	function boostEscapeCheck(who) {
+		if (who.witness.suspect && who.pos.dist(who.witness.suspect.pos) < SCALE*4) {
+			if (who.inventory.slots[2] == 'NONE' || !isAttackCooldownDone(who)) {
+				// If suspect nearby + unarmed
+				useBoost(who);
+			}
+		}
 	}
 
 	function prepareEscapePath(who) {
@@ -745,6 +747,7 @@ scene('game', () => {
 
 						// --- ESCAPE THE SUSPECT ---
 
+						boostEscapeCheck(npc);
 						prepareEscapePath(npc);
 						
 					}
@@ -793,6 +796,7 @@ scene('game', () => {
 					// If the witness can see both the victim and murderer...
 					witness.witness.suspect = murderer;
 					prepareEscapePath(witness);
+					boostEscapeCheck(witness);
 				}
 			}
 		}
@@ -1053,6 +1057,7 @@ scene('game', () => {
 
 				} else if (npc.mode == 'ESCAPE') {
 					if (isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
+						boostEscapeCheck(npc);
 						prepareEscapePath(npc);
 					} else {
 						npc.mode = 'MAIN';
