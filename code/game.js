@@ -727,7 +727,7 @@ scene('game', () => {
 				// --- ATTACK SUSPECT ---
 
 				if (npc.pathfind.mode == 'GET_SUSPECT' && isAttackCooldownDone(npc) && isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
-					npc.angle = npc.witness.suspect.pos.angle(npc.pos);
+					npc.angle = npc.witness.suspect.pos.angle(npc.pos) + 90;
 					useSelectedItem(npc);
 				}
 
@@ -908,13 +908,14 @@ scene('game', () => {
 					}
 				}
 			} else if (attackStyle == 'RANGED') {
-				let angle = toWorld(mousePos()).angle(attacker.pos);
+				//let angle = toWorld(mousePos()).angle(attacker.pos);
+				let angle = attacker.angle - 90;
 				
 				add([
 					sprite('bullet'),
 					pos(attacker.pos),
 					scale(SCALE/500 * 0.5),
-					rotate(angle - 90),
+					rotate(angle + 90),
 					anchor('center'),
 					move(angle, SCALE * BLASTER_BULLET_SPEED),
 					area(),
