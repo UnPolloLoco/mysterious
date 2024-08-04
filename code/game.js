@@ -28,6 +28,8 @@ scene('game', () => {
 	let coinSpawnPoints = [];
 	let usedCoinSpawnPoints = [];
 
+	let armoryBlaster;
+
 	for (let row = 0; row < MAP.length; row++) {
 		for (let column = 0; column < MAP[row].length; column++) {
 
@@ -61,8 +63,8 @@ scene('game', () => {
 					tile.use(z(L.walls));
 				}
 
-				// Floor, spawn, OR coin tile
-				if (['FLOOR', 'SPAWN', 'COIN'].includes(tileBehavior)) {
+				// Floor, spawn, coin, OR blaster tile
+				if (['FLOOR', 'SPAWN', 'COIN', 'ARMORY'].includes(tileBehavior)) {
 					tile.use(color(rgb(60,60,60)));
 
 					// Spawn tile only
@@ -72,6 +74,19 @@ scene('game', () => {
 					// Coin tile only
 					if (tileBehavior == 'COIN') {
 						coinSpawnPoints.push(tilePosition);
+					}
+
+					// Blaster tile only
+					if (tileBehavior == 'ARMORY') {
+						armoryBlaster = add([
+							sprite('blaster'),
+							pos(tilePosition.add(SCALE/2)),
+							scale(SCALE/500 * 0.8),
+							area(),
+							anchor('center'),
+							color(BLUE),
+							'armoryBlaster',
+						])
 					}
 				}
 
@@ -394,6 +409,21 @@ scene('game', () => {
 		} else if (item == 'BOOST') {
 			useBoost(who);
 		}
+
+		return (item != 'NONE'); // True if item exists
+	}
+
+	// --- INTERACTIONS ---
+
+	function interactionCheck(who) {
+		debug.log('interact')
+		if (isLineOfSightBetween(who.pos, armoryBlaster.pos) && who.pos.dist(armoryBlaster.pos) < SCALE*ARMORY_USE_RANGE) {
+			if (who.inventory.slots[2] == 'NONE' && who.coins >= ARMORY_USE_COST) {
+				who.inventory.slots[2] = 'BLASTER';
+				who.coins -= ARMORY_USE_COST;
+				debug.log('PURCHASED')
+			}
+		}
 	}
 
 	// --- ROLE ASSIGNMENT ---
@@ -549,6 +579,8 @@ scene('game', () => {
 
 		destroy(c);
 		p.coins += 1;
+
+		if (p == player) debug.log(p.coins);
 	})
 
 	// --- JUSTICE FUNCTIONS ---
@@ -833,6 +865,10 @@ scene('game', () => {
 			debug.log('sheriff has perished D:')
 		}
 
+		if (victim.role == 'MURDERER') {
+			debug.log('MURDERER has perished')
+		}
+
 		destroy(victim);
 		debug.log('womp womp')
 	}
@@ -938,7 +974,7 @@ scene('game', () => {
 		}
 	}
 
-	// - Bullet collision -
+	// --- BULLET COLLISION ---
 
 	onCollide('bullet', 'person', (b, p) => {
 		if (b.source != p) {
@@ -970,7 +1006,11 @@ scene('game', () => {
 	// --- KEY PRESS EVENTS ---
 
 	onKeyPress('space', () => {
-		useSelectedItem(player);
+		let itemWasUsed = useSelectedItem(player);
+
+		if (itemWasUsed == false) {
+			interactionCheck(player);
+		}
 	})
 
 	onKeyPress('1', () => { selectInventorySlot(player, 0); });
@@ -1142,6 +1182,14 @@ scene('game', () => {
 			} else {
 				playerRangedIndicator.opacity = 0;
 			}
+		}
+
+		// --- ARMORY EFFECTS ---
+
+		if (checkSelectedSlot(player) == 'NONE' && isLineOfSightBetween(armoryBlaster.pos, player.pos) && armoryBlaster.pos.dist(player.pos) < SCALE*ARMORY_USE_RANGE) {
+			armoryBlaster.use(color(WHITE));
+		} else {
+			armoryBlaster.use(color(BLUE));
 		}
 
 		// --- CAMERA EFFECTS ---
