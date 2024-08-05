@@ -494,18 +494,19 @@ scene('game', () => {
 			pos(0,0),
 			anchor('center'),
 			color(WHITE),
-			opacity(0.3),
+			opacity(0),
 			z(L.players - 1),
 		])
 		
 		
-	} else if (player.role == 'SHERIFF') {
+	} else {
+		// ranged indicator exists for both sheriff AND innocent because innocents can arm themselves
 		playerRangedIndicator = add([
 			rect(SCALE*100, SCALE*0.1),
 			pos(0,0),
 			anchor('left'),
 			rotate(0),
-			opacity(0.3),
+			opacity(0),
 			color(WHITE),
 			z(L.players - 1),
 		])
