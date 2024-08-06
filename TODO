@@ -32,8 +32,8 @@
 [x] Give armed innocents an attack indicator
 [x] Let NPCs use the armory
 [x] Make armed innocents properly attack
-[ ] Hide ranged indicator beyond the outer walls (8-6)
-[ ] Make murderer NPC less likely to strike with witnesses (8-6)
+[x] Hide ranged indicator beyond the outer walls
+[x] Make murderer NPC less likely to strike with witnesses
 
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 

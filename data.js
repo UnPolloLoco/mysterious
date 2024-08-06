@@ -46,6 +46,7 @@ const MAP_ICON_INFO = {
 	'A': { behavior: 'ARMORY', sprite: 'tile' },
 } 
 
+// First row must be longest
 const MAP = [
 	'#####################',
 	'#%%%%%%%%%%%%%#%%%%%#',

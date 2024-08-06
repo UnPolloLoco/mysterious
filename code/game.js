@@ -152,6 +152,47 @@ scene('game', () => {
 		raycastedWallEffectMask.pts = pts;
 	}
 
+	// --- BLACK BORDERS ---
+
+	let mapWidth = MAP[0].length;
+	let mapHeight = MAP.length;
+
+	// Top
+	add([
+		rect(SCALE*(40 + mapWidth), SCALE*20),
+		pos(SCALE * mapWidth/2, 0),
+		anchor('bot'),
+		color(BLACK),
+		z(L.walls + 10),
+	])
+
+	// Bottom
+	add([
+		rect(SCALE*(40 + mapWidth), SCALE*20),
+		pos(SCALE * mapWidth/2, SCALE*mapHeight),
+		anchor('top'),
+		color(BLACK),
+		z(L.walls + 10),
+	])
+
+	// Left
+	add([
+		rect(SCALE*20, SCALE*(40 + mapHeight)),
+		pos(0, SCALE * mapHeight/2),
+		anchor('right'),
+		color(BLACK),
+		z(L.walls + 10),
+	])
+	
+	// Right
+	add([
+		rect(SCALE*20, SCALE*(40 + mapHeight)),
+		pos(SCALE*mapWidth, SCALE * mapHeight/2),
+		anchor('left'),
+		color(BLACK),
+		z(L.walls + 10),
+	])
+
 	// --- PATHFINDER PREP ---
 	
 	function isHitboxAt(row, column) {
@@ -1190,7 +1231,11 @@ scene('game', () => {
 				let attackRange = SCALE * MELEE_ATTACK_DISTANCE;
 
 				if (npc.pos.sdist(npc.pathfind.secondary.victim.pos) <= attackRange**2) {
-					useSelectedItem(npc);
+					let witnesses = getPeopleVisibleTo(npc).length - 1;
+
+					if (witnesses == 0) {
+						useSelectedItem(npc);
+					}
 				}
 			}
 		})
