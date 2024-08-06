@@ -256,6 +256,35 @@ scene('game', () => {
 		return !isSightObstructed;
 	}
 
+	// --- PATHFINDING FUNCTIONS ---
+
+	function choosePathfindGoal(npc) {
+		let startTile = toTile(npc.pos);
+		let goalCandidate;
+
+		for (let i = 0; i < 1000; i++) {
+			goalCandidate = chooseItem(PATHFIND_GOAL_LIST);
+
+			if (startTile.sdist(goalCandidate) > 25) {
+				npc.pathfind.mainGoal = goalCandidate;
+				break;
+			}
+		}
+
+		npc.pathfind.path = pathfind(startTile, npc.pathfind.mainGoal);
+	}
+
+	// Armory-specific
+
+	function armoryPathfind(npc) {
+		npc.pathfind.path = pathfind(
+			toTile(npc.pos),
+			toTile(armoryBlaster.pos),
+		);
+		npc.pathfind.mode = 'GET_ARMORY';
+
+		npc.pathfind.path.pop();
+	}
 
 	// --- PERSON SPAWN ---
 
@@ -299,22 +328,6 @@ scene('game', () => {
 	])
 
 	// Spawn NPCs
-
-	function choosePathfindGoal(npc) {
-		let startTile = toTile(npc.pos);
-		let goalCandidate;
-
-		for (let i = 0; i < 1000; i++) {
-			goalCandidate = chooseItem(PATHFIND_GOAL_LIST);
-
-			if (startTile.sdist(goalCandidate) > 25) {
-				npc.pathfind.mainGoal = goalCandidate;
-				break;
-			}
-		}
-
-		npc.pathfind.path = pathfind(startTile, npc.pathfind.mainGoal);
-	}
 
 	let reamainingSpawns = possibleSpawnPoints.length;
 
@@ -416,12 +429,15 @@ scene('game', () => {
 	// --- INTERACTIONS ---
 
 	function interactionCheck(who) {
-		debug.log('interact')
 		if (isLineOfSightBetween(who.pos, armoryBlaster.pos) && who.pos.dist(armoryBlaster.pos) < SCALE*ARMORY_USE_RANGE) {
 			if (who.inventory.slots[2] == 'NONE' && who.coins >= ARMORY_USE_COST) {
 				who.inventory.slots[2] = 'BLASTER';
 				who.coins -= ARMORY_USE_COST;
-				debug.log('PURCHASED')
+
+				if (who.isNpc) {
+					who.pathfind.mode = 'MAIN'; 
+					choosePathfindGoal(who);
+				}
 			}
 		}
 	}
@@ -629,7 +645,7 @@ scene('game', () => {
 				if (who.pos.sdist(sPos) > nextNode.sdist(sPos)) {
 					choosePathfindGoal(who);
 				} else {
-					who.mode = 'ESCAPE';
+					who.pathfind.mode = 'ESCAPE';
 					break;
 				}
 			}
@@ -672,7 +688,7 @@ scene('game', () => {
 				}
 
 				// Coin located?
-				if (nearestCoin.id != 0 && getModePriority(npc.mode) < getModePriority('COIN')) {
+				if (nearestCoin.id != 0 && getModePriority(npc.pathfind.mode) < getModePriority('COIN')) {
 					// Begin following nearest visible coin
 					npc.use(`trackCoin${nearestCoin.id}`);
 					npc.pathfind.mode = 'COIN';
@@ -770,10 +786,8 @@ scene('game', () => {
 					// --- PURSUIT SUSPECT ---
 					
 					if (isAttackCooldownDone(npc) && npc.inventory.slots[2] != 'NONE') {
-						if (npc.role == 'SHERIFF') { // temp
-							if (getModePriority(npc.pathfind.mode) < getModePriority('GET_SUSPECT')) {
-								attemptPursuit(npc);
-							}
+						if (getModePriority(npc.pathfind.mode) < getModePriority('GET_SUSPECT')) {
+							attemptPursuit(npc);
 						}
 
 					} else {
@@ -785,6 +799,20 @@ scene('game', () => {
 						
 					}
 				}
+
+				// --- ARMORY USE ---
+
+				if (npc.coins >= ARMORY_USE_COST && npc.inventory.slots[2] == 'NONE') {
+					if (getModePriority(npc.pathfind.mode) < getModePriority('GET_ARMORY')) {
+						// - Pathfind -
+						armoryPathfind(npc);
+
+					} else if (npc.pathfind.mode == 'GET_ARMORY') {
+						// - Purchase - 
+						interactionCheck(npc);
+					}
+				}
+
 			}
 
 		})
@@ -1077,9 +1105,16 @@ scene('game', () => {
 
 		player.pos = player.pos.add(displacement);
 
-		// --- END OF PATH BEHAVIOR ---
 		
 		get('npc').forEach((npc) => {
+			/*if (npc.pathfind.mode == 'COIN') {
+				npc.scale = vec2(SCALE/500 * (1 + 0.2*Math.sin(time()*15)));
+			} else {
+				npc.scale = vec2(SCALE/500);
+			}*/
+			
+			// --- END OF PATH BEHAVIOR ---
+
 			if (npc.pathfind.path.length == 0) {
 				// - Murderer -
 				if (npc.pathfind.mode == 'MURDER') {
@@ -1097,12 +1132,12 @@ scene('game', () => {
 						cancelPursuit(npc);
 					}
 
-				} else if (npc.mode == 'ESCAPE') {
+				} else if (npc.pathfind.mode == 'ESCAPE') {
 					if (isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
 						boostEscapeCheck(npc);
 						prepareEscapePath(npc);
 					} else {
-						npc.mode = 'MAIN';
+						npc.pathfind.mode = 'MAIN';
 						choosePathfindGoal(npc);
 					}
 					

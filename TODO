@@ -30,8 +30,12 @@
 [x] Improve sheriff NPC aim
 [x] Add an armory that arms innocents
 [x] Give armed innocents an attack indicator
-[ ] Let NPCs use the armory (8-5)
+[x] Let NPCs use the armory
+[x] Make armed innocents properly attack
+[ ] Hide ranged indicator beyond the outer walls (8-6)
+[ ] Make murderer NPC less likely to strike with witnesses (8-6)
+
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 
-[ ] Make the murderer more sneaky
 [ ] Lights sabotage and renewal?
+[ ] Hard mode - Murderer cannot kill with a witness, sheriffs aim better

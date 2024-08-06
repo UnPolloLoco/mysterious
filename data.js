@@ -23,15 +23,16 @@ const BOOST_DURATION = 1.5;
 const BOOST_MULTIPLIER = 1.5;
 
 const ARMORY_USE_RANGE = 3;
-const ARMORY_USE_COST = 5;
+const ARMORY_USE_COST = 2;
 
 const PATHFIND_MODE_PRIORITY = {
 	'MAIN': 0,
 	'COIN': 1,
-	'MURDER': 2,
-	'GET_HAT': 2,
-	'GET_SUSPECT': 3,
-	'ESCAPE': 4,
+	'GET_ARMORY': 2,
+	'MURDER': 3,
+	'GET_HAT': 3,
+	'GET_SUSPECT': 4,
+	'ESCAPE': 5,
 }
 
 const MAP_ICON_INFO = {
@@ -57,7 +58,7 @@ const MAP = [
 	'#..@.......$........#',
 	'#...................#',
 	'######...######.....#',
-	'#%%%%%...%%%%%#########',
+	'#%%%%%...%%%%%#######',
 	'#.............#',
 	'#..@.......$..#',
 	'#.............#',
