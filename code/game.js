@@ -557,7 +557,7 @@ scene('game', () => {
 		
 		
 	} else {
-		// ranged indicator exists for both sheriff AND innocent because innocents can arm themselves
+		// Ranged indicator exists for both sheriff AND innocent because innocents can arm themselves
 		playerRangedIndicator = add([
 			rect(SCALE*100, SCALE*0.1),
 			pos(0,0),
@@ -818,7 +818,37 @@ scene('game', () => {
 
 				if (npc.pathfind.mode == 'GET_SUSPECT' && isAttackCooldownDone(npc) && isLineOfSightBetween(npc.pos, npc.witness.suspect.pos)) {
 					npc.angle = npc.witness.suspect.pos.angle(npc.pos) + 90;
-					useSelectedItem(npc);
+
+					let visiblePeopleList = getPeopleVisibleTo(npc);
+					let canShoot = true;
+
+					// For testing collision
+					let attackLineArea = add([
+						rect(SCALE*7, SCALE*0.1),
+						pos(npc.pos),
+						anchor('left'),
+						rotate(npc.angle - 90),
+						opacity(0),
+						area(),
+					])
+
+					// Check if innocents will be caught in the crossfire
+					visiblePeopleList.forEach((person) => {
+						if (person != npc.witness.suspect) {
+							// Too close?
+							if (person.pos.sdist(npc.pos) < (SCALE*2)**2) {
+								canShoot = false;
+							}
+
+							// In attack line?
+							if (attackLineArea.isColliding(person)) {
+								canShoot = false;
+							}
+						}
+					})
+
+					destroy(attackLineArea);
+					if (canShoot) useSelectedItem(npc);
 				}
 
 				// If suspect in sight...
@@ -1233,7 +1263,7 @@ scene('game', () => {
 				if (npc.pos.sdist(npc.pathfind.secondary.victim.pos) <= attackRange**2) {
 					let witnesses = getPeopleVisibleTo(npc).length - 1;
 
-					if (witnesses == 0) {
+					if (witnesses <= 1) {
 						useSelectedItem(npc);
 					}
 				}

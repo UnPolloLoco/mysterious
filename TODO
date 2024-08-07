@@ -34,6 +34,7 @@
 [x] Make armed innocents properly attack
 [x] Hide ranged indicator beyond the outer walls
 [x] Make murderer NPC less likely to strike with witnesses
+[x] Make armed NPCs avoid hitting innocents
 
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 

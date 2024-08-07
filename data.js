@@ -23,7 +23,7 @@ const BOOST_DURATION = 1.5;
 const BOOST_MULTIPLIER = 1.5;
 
 const ARMORY_USE_RANGE = 3;
-const ARMORY_USE_COST = 2;
+const ARMORY_USE_COST = 5;
 
 const PATHFIND_MODE_PRIORITY = {
 	'MAIN': 0,
