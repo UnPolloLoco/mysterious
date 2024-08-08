@@ -60,7 +60,7 @@ scene('game', () => {
 					tile.use(area());
 					tile.use(body({ isStatic: true }));
 					tile.use(color(rgb(200,200,200)));
-					tile.use(z(L.walls));
+					tile.use(z(L.players - 10));
 				}
 
 				// Floor, spawn, coin, OR blaster tile
@@ -340,6 +340,19 @@ scene('game', () => {
 		return spawnPoint;
 	}
 
+	// Create hitboxes
+
+	let personHitboxPointList = [];
+	let phplSides = 8;
+	let tau = Math.PI * 2;
+
+	for (let i = 0; i < phplSides; i++) {
+		personHitboxPointList.push(vec2(
+			Math.cos(i/phplSides * tau),
+			Math.sin(i/phplSides * tau)
+		).scale(250 * PERSON_HITBOX_SCALE));
+	}
+
 	// Spawn YOU
 
 	const player = add([
@@ -348,11 +361,16 @@ scene('game', () => {
 		scale(SCALE/500),
 		anchor('center'),
 		rotate(0),
-		area({ collisionIgnore: ['person'] }),
+		opacity(0),
+		area({ 
+			shape: new Polygon(personHitboxPointList),
+			collisionIgnore: ['person'],
+		}),
 		body(),
 		z(L.players + 1),
 		{
 			isNPC: false,
+			puppet: null,
 			acceleration: 0,
 			rotationAcceleration: 0,
 			coins: 0,
@@ -379,11 +397,16 @@ scene('game', () => {
 			scale(SCALE/500),
 			anchor('center'),
 			rotate(0),
-			area({ collisionIgnore: ['person'] }),
+			opacity(0),
+			area({ 
+				shape: new Polygon(personHitboxPointList),
+				collisionIgnore: ['person'],
+			}),
 			body(),
 			z(L.players),
 			{
 				isNPC: true,
+				puppet: null,
 				acceleration: 0,
 				rotationTween: false,
 				fakeAngle: 0,
@@ -419,7 +442,24 @@ scene('game', () => {
 		])
 
 		choosePathfindGoal(npc);
-	}
+	} 
+
+	// --- PEOPLE SKINS ---
+
+	get('person').forEach((person) => {
+		person.puppet = add([
+			sprite('person2', { anim: 'run' }),
+			pos(0,0),
+			anchor('bot'),
+			scale(SCALE/160 * PUPPET_SIZE),
+			z(L.players + 1),
+			area(),
+			{
+				master: person,
+			},
+			'puppet',
+		])
+	})
 
 	// --- BOOSTER ---
 	
@@ -513,6 +553,8 @@ scene('game', () => {
 				'MURDERER': RED,
 				'SHERIFF': rgb(0,127,255),
 			}[role]));
+
+			who.puppet.use(color(who.color))
 		}
 
 		if (role == 'SHERIFF') {
@@ -969,6 +1011,7 @@ scene('game', () => {
 			debug.log('MURDERER has perished')
 		}
 
+		destroy(victim.puppet);
 		destroy(victim);
 		debug.log('womp womp')
 	}
@@ -1268,6 +1311,14 @@ scene('game', () => {
 					}
 				}
 			}
+		})
+
+		// --- PUPPET VISUALS --- 
+
+		get('person').forEach((person) => {
+			let puppet = person.puppet;
+
+			puppet.pos = person.pos.add(0, SCALE*PUPPET_OFFSET);
 		})
 
 		// --- ATTACK INDICATOR VISUALS ---

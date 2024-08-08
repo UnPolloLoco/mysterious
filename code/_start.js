@@ -63,6 +63,16 @@ function getModePriority(mode) {
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
 
 loadSprite('person', PLACEHOLDER);
+loadSprite('person2', 'https://i.ibb.co/4F99R6t/IMG-3516.png', {
+	sliceX: 4,
+	anims: {
+		run: {
+			from: 0, to: 3,
+			speed: 14,
+			loop: true,
+		}
+	}
+});
 loadSprite('block', PLACEHOLDER);
 loadSprite('coin', PLACEHOLDER);
 loadSprite('bullet', PLACEHOLDER);

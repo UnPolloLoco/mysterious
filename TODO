@@ -35,7 +35,10 @@
 [x] Hide ranged indicator beyond the outer walls
 [x] Make murderer NPC less likely to strike with witnesses
 [x] Make armed NPCs avoid hitting innocents
+[x] Connect placeholder people sprites to the placeholder boxes
+[x] Fix HITBOX tile layering
 
+[ ] Fix murderer temporarily stopping movement sometimes
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 
 [ ] Lights sabotage and renewal?
