@@ -58,19 +58,34 @@ function getModePriority(mode) {
 	return PATHFIND_MODE_PRIORITY[mode];
 }
 
+function fixAngle(x) {
+	if (x < 0) x += 360;
+	return x % 360;
+}
+
 // --- SPRITES ---
 
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
 
 loadSprite('person', PLACEHOLDER);
-loadSprite('person2', 'https://i.ibb.co/4F99R6t/IMG-3516.png', {
-	sliceX: 4,
+loadSprite('person2', 'https://i.ibb.co/whkzdyc/IMG-3562.png', {
+	sliceX: 4, sliceY: 3,
 	anims: {
-		run: {
+		'side': {
 			from: 0, to: 3,
 			speed: 14,
 			loop: true,
-		}
+		},
+		'front': {
+			from: 4, to: 7,
+			speed: 14,
+			loop: true,
+		},
+		'back': {
+			from: 8, to: 11,
+			speed: 14,
+			loop: true,
+		},
 	}
 });
 loadSprite('block', PLACEHOLDER);

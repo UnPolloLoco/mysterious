@@ -38,8 +38,10 @@
 [x] Connect placeholder people sprites to the placeholder boxes
 [x] Fix HITBOX tile layering
 
-[ ] Fix murderer temporarily stopping movement sometimes
+[ ] Fix murderer temporarily stopping movement sometimes (related to witness count check?)
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 
 [ ] Lights sabotage and renewal?
+
 [ ] Hard mode - Murderer cannot kill with a witness, sheriffs aim better
+[ ] Control settings - Lift mouse to move, hold to stop

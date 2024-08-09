@@ -448,10 +448,10 @@ scene('game', () => {
 
 	get('person').forEach((person) => {
 		person.puppet = add([
-			sprite('person2', { anim: 'run' }),
+			sprite('person2', { anim: 'front' }),
 			pos(0,0),
 			anchor('bot'),
-			scale(SCALE/160 * PUPPET_SIZE),
+			scale(SCALE/45 * PUPPET_SIZE),
 			z(L.players + 1),
 			area(),
 			{
@@ -1319,6 +1319,33 @@ scene('game', () => {
 			let puppet = person.puppet;
 
 			puppet.pos = person.pos.add(0, SCALE*PUPPET_OFFSET);
+
+			let curAnim = puppet.getCurAnim().name;
+			let newAnim;
+			let fixedAngle = fixAngle(person.angle);
+
+			if (fixedAngle >= 45 && fixedAngle < 135) {
+				// RIGHT
+				newAnim = 'side';
+				puppet.flipX = false;
+
+			} else if (fixedAngle >= 135 && fixedAngle < 225) {
+				// DOWN
+				newAnim = 'front';
+				puppet.flipX = false;
+
+			} else if (fixedAngle >= 225 && fixedAngle < 315) {
+				// LEFT
+				newAnim = 'side';
+				puppet.flipX = true;
+
+			} else if (fixedAngle >= 315 || fixedAngle < 45) {
+				// UP
+				newAnim = 'back';
+				puppet.flipX = false;
+			}
+
+			if (newAnim != curAnim) puppet.play(newAnim);
 		})
 
 		// --- ATTACK INDICATOR VISUALS ---
