@@ -88,6 +88,9 @@ loadSprite('person2', 'https://i.ibb.co/whkzdyc/IMG-3562.png', {
 		},
 	}
 });
+loadSprite('tile', 'https://i.ibb.co/YhWPN9Y/IMG-3909.png', {
+	sliceX: 1, sliceY: 3,
+})
 loadSprite('block', PLACEHOLDER);
 loadSprite('coin', PLACEHOLDER);
 loadSprite('bullet', PLACEHOLDER);

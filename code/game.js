@@ -719,8 +719,8 @@ scene('game', () => {
 	}
 
 	function prepareEscapePath(who) {
-		if (who.pathfind.path.length >= 2) {
-			for (let i = 0; i < 100; i++) {
+		for (let i = 0; i < 100; i++) {
+			if (who.pathfind.path.length >= 2) {
 				let nextNode = fromTile(who.pathfind.path[1]);
 				let sPos = who.witness.suspect.pos;
 
@@ -731,10 +731,10 @@ scene('game', () => {
 					who.pathfind.mode = 'ESCAPE';
 					break;
 				}
+			} else {
+				choosePathfindGoal(who);
+				//prepareEscapePath(who);
 			}
-		} else {
-			choosePathfindGoal(who);
-			prepareEscapePath(who);
 		}
 	}
 
@@ -1119,14 +1119,16 @@ scene('game', () => {
 
 	// --- BULLET COLLISION ---
 
-	onCollide('bullet', 'person', (b, p) => {
-		if (b.source != p) {
+	onCollide('bullet', 'puppet', (b, p) => {
+		let person = p.master;
+
+		if (b.source != person) {
 			// If the victim was innocent, kill the sheriff
-			if (p.role != 'MURDERER') {
+			if (person.role != 'MURDERER') {
 				murderEvent(b.source, null);
 			}
 
-			murderEvent(p, null);
+			murderEvent(person, null);
 			destroy(b);
 		}
 	})

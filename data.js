@@ -39,22 +39,32 @@ const PATHFIND_MODE_PRIORITY = {
 	'ESCAPE': 5,
 }
 
+// sprite: frame, frame, frame *special (apple:1) (banana: 1,2 *peel)
 const MAP_ICON_INFO = {
 	' ': { behavior: 'NONE' },
 	'@': { behavior: 'SPAWN' },
 	'$': { behavior: 'COIN' },
-	'#': { behavior: 'WALL', sprite: 'tile' },
-	'%': { behavior: 'HITBOX', sprite: 'tile' },
-	'o': { behavior: 'HITBOX', sprite: 'tile' },
-	'.': { behavior: 'FLOOR', sprite: 'tile' },
-	'A': { behavior: 'ARMORY', sprite: 'tile' },
+	'#': { behavior: 'WALL', sprite: 'block' },
+	'%': { behavior: 'HITBOX', sprite: 'tile: 0,1 *wall' },
+	'o': { behavior: 'HITBOX', sprite: 'block' },
+	'.': { behavior: 'FLOOR', sprite: 'tile:2' },
+	'A': { behavior: 'ARMORY', sprite: 'block' },
 } 
 
 // First row must be longest
 const MAP = [
 	'#####################',
-	'#%%%%%%%%%%%%%#%%%%%#',
-	'#%%%%%%%%%%%%%#%%%%%#',
+	'#...................#',
+	'#...................#',
+	'#...................#',
+	'#...#oo#oo#oo#oo#...#',
+	'#...................#',
+	'#...................#',
+	'#...................#',
+	'#...................#',
+	'###..################',
+	'#%%..%%%%%%%%%#%%%%%#',
+	'#%%..%%%%%%%%%#%%%%%#',
 	'#.............#..A..#',
 	'#..........@..#.....#',
 	'#..$.o........#.....#',
