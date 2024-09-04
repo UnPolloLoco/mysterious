@@ -63,6 +63,16 @@ function fixAngle(x) {
 	return x % 360;
 }
 
+function strCount(string, char) {
+	return string.split(char).length - 1;
+}
+
+function parseIntList(list) {
+	let final = [];
+	list.forEach((x) => { final.push(parseInt(x)); });
+	return final;
+}
+
 // --- SPRITES ---
 
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
@@ -88,6 +98,7 @@ loadSprite('person2', 'https://i.ibb.co/whkzdyc/IMG-3562.png', {
 		},
 	}
 });
+loadSprite('wallTest', 'https://i.ibb.co/6mnKK9d/IMG-4317.png')
 loadSprite('tile', 'https://i.ibb.co/YhWPN9Y/IMG-3909.png', {
 	sliceX: 1, sliceY: 3,
 })

@@ -18,10 +18,42 @@ scene('game', () => {
 	
 	// --- MAP CREATION ---
 
+	function tileInfo(char) {
+		return MAP_ICON_INFO[char];
+	}
+
 	function getBehavior(char) {
-		let tileInfo = MAP_ICON_INFO[char];
-		if (tileInfo == undefined) return 'NONE';
-		return tileInfo.behavior;
+		let info = tileInfo(char);
+		if (info == undefined) return 'NONE';
+		return info.behavior;
+	}
+
+	function getSpriteData(char) {
+		if (tileInfo(char).sprite == undefined) char = '.';
+
+		let dataString = tileInfo(char).sprite.replaceAll(' ', '');
+
+		let hasColon = strCount(dataString, ':') == 1;
+
+		let finalObj = {
+			sprite: dataString, 
+			frame: 0,
+			special: null,
+			offset: vec2(0),
+		};
+
+		if (hasColon) {
+			let colonSplit = dataString.split(':');
+			finalObj.sprite = colonSplit[0];
+			finalObj.frame = colonSplit[1];
+		}
+
+		let spriteInfo = SPRITE_INFO[finalObj.sprite];
+		if (spriteInfo && spriteInfo.offset) {
+			finalObj.offset = vec2(spriteInfo.offset[0], spriteInfo.offset[1]).scale(SCALE);
+		}
+
+		return finalObj;
 	}
 
 	let possibleSpawnPoints = [];
@@ -39,14 +71,17 @@ scene('game', () => {
 			// Ignore tile if nothing should be done with it
 			if (!['NONE', 'WALL'].includes(tileBehavior)) {
 
+				let spriteData = getSpriteData(currentTile);
+				let usedFrame = spriteData.frame;
+
 				let tilePosition = vec2(
 					column * SCALE, 
 					row * SCALE);
 
 				let tile = add([
-					sprite('block'),
-					scale(SCALE/500),
-					pos(tilePosition),
+					sprite(spriteData.sprite, {frame: usedFrame}),
+					scale(SCALE/640),
+					pos(tilePosition.add(spriteData.offset)),
 					z(L.floor),
 					{
 						tile: currentTile,
@@ -65,7 +100,7 @@ scene('game', () => {
 
 				// Floor, spawn, coin, OR blaster tile
 				if (['FLOOR', 'SPAWN', 'COIN', 'ARMORY'].includes(tileBehavior)) {
-					tile.use(color(rgb(60,60,60)));
+					//tile.use(color(rgb(60,60,60)));
 
 					// Spawn tile only
 					if (tileBehavior == 'SPAWN') {

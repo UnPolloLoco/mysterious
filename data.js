@@ -45,11 +45,17 @@ const MAP_ICON_INFO = {
 	'@': { behavior: 'SPAWN' },
 	'$': { behavior: 'COIN' },
 	'#': { behavior: 'WALL', sprite: 'block' },
-	'%': { behavior: 'HITBOX', sprite: 'tile: 0,1 *wall' },
+	'%': { behavior: 'HITBOX', sprite: 'wallTest' },
 	'o': { behavior: 'HITBOX', sprite: 'block' },
 	'.': { behavior: 'FLOOR', sprite: 'tile:2' },
 	'A': { behavior: 'ARMORY', sprite: 'block' },
 } 
+
+const SPRITE_INFO = {
+	'wallTest': {
+		offset: [0, -0.5],
+	}
+}
 
 // First row must be longest
 const MAP = [
