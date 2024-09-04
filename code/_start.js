@@ -98,7 +98,6 @@ loadSprite('person2', 'https://i.ibb.co/whkzdyc/IMG-3562.png', {
 		},
 	}
 });
-loadSprite('wallTest', 'https://i.ibb.co/6mnKK9d/IMG-4317.png')
 loadSprite('tile', 'https://i.ibb.co/YhWPN9Y/IMG-3909.png', {
 	sliceX: 1, sliceY: 3,
 })
@@ -109,4 +108,6 @@ loadSprite('gravestone', PLACEHOLDER);
 loadSprite('sheriffDrop', PLACEHOLDER);
 loadSprite('blaster', PLACEHOLDER);
 
-// loadRoot('sprites/');
+loadRoot('sprites/');
+
+loadSprite('wallTest', 'wallTest.png')
