@@ -37,13 +37,20 @@
 [x] Make armed NPCs avoid hitting innocents
 [x] Connect placeholder people sprites to the placeholder boxes
 [x] Fix HITBOX tile layering
+[x] Test new floor texture
+[x] Redraw map
+[ ] Make raycast based on the bottom of the wall
+[ ] Make other rooms visible beyond raycast shadow
+[ ] Add the top of the walls
+[ ] Mask NPCs when out of view
+[ ] Add shadows under the walls
+[ ] Use the offscreen component
 
 [ ] Fix rare pathfinding related crash
 [ ] Fix murderer temporarily stopping movement sometimes (related to witness count check?)
 [ ] Add a way for murderer NPCs to boost
 [ ] Make a better suspicion system 
 [ ] Lights sabotage and renewal?
-[ ] Make other rooms visible beyond raycast shadow?
 
 [ ] Hard mode - Murderer cannot kill with a witness, sheriffs aim better
 [ ] Control settings - Lift mouse to move, hold to stop

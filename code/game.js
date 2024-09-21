@@ -40,6 +40,7 @@ scene('game', () => {
 			frame: 0,
 			special: null,
 			offset: vec2(0),
+			width: 500,
 		};
 
 		if (hasColon) {
@@ -49,8 +50,13 @@ scene('game', () => {
 		}
 
 		let spriteInfo = SPRITE_INFO[finalObj.sprite];
-		if (spriteInfo && spriteInfo.offset) {
-			finalObj.offset = vec2(spriteInfo.offset[0], spriteInfo.offset[1]).scale(SCALE);
+		if (spriteInfo) {
+			if (spriteInfo.offset)
+				finalObj.offset = vec2(spriteInfo.offset[0], spriteInfo.offset[1]).scale(SCALE);
+			if (spriteInfo.width) 
+				finalObj.width = spriteInfo.width;
+			if (spriteInfo.special) 
+				finalObj.special = spriteInfo.special;
 		}
 
 		return finalObj;
@@ -69,10 +75,14 @@ scene('game', () => {
 			let tileBehavior = getBehavior(currentTile);
 
 			// Ignore tile if nothing should be done with it
-			if (!['NONE', 'WALL'].includes(tileBehavior)) {
+			if (!['NONE'].includes(tileBehavior)) {
 
 				let spriteData = getSpriteData(currentTile);
 				let usedFrame = spriteData.frame;
+
+				if (spriteData.special == 'floor') {
+					usedFrame = column % 2;
+				}
 
 				let tilePosition = vec2(
 					column * SCALE, 
@@ -80,15 +90,29 @@ scene('game', () => {
 
 				let tile = add([
 					sprite(spriteData.sprite, {frame: usedFrame}),
-					scale(SCALE/640),
+					scale(SCALE/spriteData.width),
 					pos(tilePosition.add(spriteData.offset)),
 					z(L.floor),
+					offscreen({
+						hide: true,
+						distance: SCALE*3,
+					}),
 					{
 						tile: currentTile,
 						behavior: tileBehavior,
 					},
 					'tile',
 				])
+
+				/*if (spriteData.sprite == 'wallTest')  {
+					add([
+						z(L.floor + 1),
+						rect(SCALE, SCALE/2),
+						pos(tile.pos.add(0, SCALE*1.5)),
+						color(BLACK),
+						opacity(0.15)
+					])
+				}*/
 
 				// Hitbox tile
 				if (tileBehavior == 'HITBOX') {
@@ -100,7 +124,6 @@ scene('game', () => {
 
 				// Floor, spawn, coin, OR blaster tile
 				if (['FLOOR', 'SPAWN', 'COIN', 'ARMORY'].includes(tileBehavior)) {
-					//tile.use(color(rgb(60,60,60)));
 
 					// Spawn tile only
 					if (tileBehavior == 'SPAWN') {
@@ -134,6 +157,7 @@ scene('game', () => {
 	// --- SPECIAL WALLS CREATION ---
 
 	const wallLevel = addLevel(MAP, {
+		//pos: vec2(0, SCALE/2),
 		tileWidth: SCALE, tileHeight: SCALE,
 		tiles: {
 			'#': () => [
@@ -142,6 +166,7 @@ scene('game', () => {
 				area(),
 				body({ isStatic: true }),
 				tile({ isObstacle: true }),
+				opacity(0),
 				'wall',
 			]
 		}
@@ -165,6 +190,7 @@ scene('game', () => {
 			SCALE * MAP.length,
 		),
 		color(BLACK),
+		opacity(0.5),
 		z(L.walls + 10),
 	])
 
@@ -981,7 +1007,7 @@ scene('game', () => {
 			raycastedWallEffect.use(opacity(0.5));
 		} else { 
 			camScale(1);
-			raycastedWallEffect.use(opacity(1));
+			//raycastedWallEffect.use(opacity(1));
 		};
 	})
 

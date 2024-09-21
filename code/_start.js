@@ -8,7 +8,6 @@ kaboom({
 	height: kaboomDimensions.h,
 	inspectColor: [255,255,255],
 	pixelDensity: 1,
-	crisp: true,
 	logMax: 3,
 });
 
@@ -76,9 +75,14 @@ function parseIntList(list) {
 // --- SPRITES ---
 
 const PLACEHOLDER = 'https://i.ibb.co/Yhq6tgx/IMG-2591.png';
+const SITE = 'https://unpolloloco.github.io/mysterious/sprites/';
 
+loadSprite('wall', SITE+'wall.png')
+loadSprite('floor', SITE+'floor.png', {
+	sliceX: 2
+})
 loadSprite('person', PLACEHOLDER);
-loadSprite('person2', 'https://i.ibb.co/whkzdyc/IMG-3562.png', {
+loadSprite('person2', SITE+'personTest.png', {
 	sliceX: 4, sliceY: 3,
 	anims: {
 		'side': {
@@ -108,6 +112,4 @@ loadSprite('gravestone', PLACEHOLDER);
 loadSprite('sheriffDrop', PLACEHOLDER);
 loadSprite('blaster', PLACEHOLDER);
 
-loadRoot('sprites/');
-
-loadSprite('wallTest', 'wallTest.png')
+//loadRoot('sprites/');
