@@ -15,6 +15,66 @@ scene('game', () => {
 	}
 
 	let movementInputStyle = ['tank', 'point'][1];
+
+	// --- RAYCAST SETUP ---
+
+	// Vision polygon
+
+	const raycastedWallEffectMask = add([
+		pos(0,0),
+		polygon([vec2(0), vec2(300), vec2(0,300)]),
+		mask('subtract'),
+		z(L.players - 6),
+	])
+
+	// Person mask vison polygon
+	const raycastedPersonMask = add([
+		pos(0,0),
+		polygon([vec2(0), vec2(300), vec2(0,300)]),
+		mask('intersect'),
+		z(L.players),
+	])
+
+	// Wall shade mask vison polygon
+	const raycastedWallShadeMask = add([
+		pos(0,0),
+		polygon([vec2(0), vec2(300), vec2(0,300)]),
+		mask('intersect'),
+		z(L.players),
+	])
+
+	// Masked black rectangle
+
+	const raycastedWallEffect = raycastedWallEffectMask.add([
+		pos(0,0),
+		rect(
+			SCALE * MAP[0].length,
+			SCALE * MAP.length,
+		),
+		color(BLACK),
+		opacity(0.5),
+		z(L.players - 6),
+	])
+
+	function drawWallMask() {
+		// Thank you Kaplay Playground
+		// Raycast
+		const pts = [player.pos];
+		for (let i = 0; i < 360; i += RAYCAST_ANGLE_STEP) {
+			const hit = wallLevel.raycast(player.pos, Vec2.fromAngle(i));
+			
+			if (hit) {
+				let point = hit.point;
+				pts.push(point);
+			}
+		}
+		pts.push(pts[1]);
+
+		// Subtraction edit
+
+		raycastedWallEffectMask.pts = pts;
+		raycastedPersonMask.pts = pts;
+	}
 	
 	// --- MAP CREATION ---
 
@@ -104,15 +164,36 @@ scene('game', () => {
 					'tile',
 				])
 
-				/*if (spriteData.sprite == 'wallTest')  {
-					add([
+				if (tileBehavior == 'WALL')  {
+					tile.use(z(L.players));
+					tile.use('wallTile');
+
+					// Shadow
+					/*add([
 						z(L.floor + 1),
 						rect(SCALE, SCALE/2),
 						pos(tile.pos.add(0, SCALE*1.5)),
 						color(BLACK),
 						opacity(0.15)
+					])*/
+
+					// Roof (black)
+					/*add([
+						pos(tile.pos.sub(0, SCALE)),
+						rect(SCALE, SCALE),
+						z(L.walls),
+						color(BLACK),
+					])*/
+					// Roof (color)
+					add([
+						//pos(tile.pos.sub(0, SCALE).add(SCALE*0.0375)),
+						pos(tile.pos.sub(0, SCALE)),
+						//rect(SCALE * (1 - 2*0.0375), SCALE * (1 - 2*0.0375)),
+						rect(SCALE, SCALE),
+						z(L.walls + 1),
+						color(rgb(30,60,80)),
 					])
-				}*/
+				}
 
 				// Hitbox tile
 				if (tileBehavior == 'HITBOX') {
@@ -172,46 +253,19 @@ scene('game', () => {
 		}
 	});
 
-	// Vision polygon
-
-	const raycastedWallEffectMask = add([
-		pos(0,0),
-		polygon([vec2(0), vec2(300), vec2(0,300)]),
-		mask('subtract'),
-		z(L.walls + 10),
-	])
-
-	// Masked black rectangle
-
-	const raycastedWallEffect = raycastedWallEffectMask.add([
-		pos(0,0),
-		rect(
-			SCALE * MAP[0].length,
-			SCALE * MAP.length,
-		),
-		color(BLACK),
-		opacity(0.5),
-		z(L.walls + 10),
-	])
-
-	function drawWallMask() {
-		// Thank you Kaplay Playground
-		// Raycast
-		const pts = [player.pos];
-		for (let i = 0; i < 360; i += RAYCAST_ANGLE_STEP) {
-			const hit = wallLevel.raycast(player.pos, Vec2.fromAngle(i));
-			
-			if (hit) {
-				let point = hit.point;
-				pts.push(point);
-			}
+	function verifyWallState(w) {
+		if (player.pos.y > w.pos.y + SCALE*1.5) {
+			// Below the wall
+			//w.use(z(L.players - 5));
+			//w.use(color(WHITE));
+		} else {
+			// Above the wall
+			let lightness = raycastedWallEffect.opacity * 255;
+			//w.use(z(L.walls));
+			//w.use(color(lightness, lightness, lightness));
 		}
-		pts.push(pts[1]);
-
-		// Subtraction edit
-
-		raycastedWallEffectMask.pts = pts;
 	}
+
 
 	// --- BLACK BORDERS ---
 
@@ -221,10 +275,10 @@ scene('game', () => {
 	// Top
 	add([
 		rect(SCALE*(40 + mapWidth), SCALE*20),
-		pos(SCALE * mapWidth/2, 0),
+		pos(SCALE * mapWidth/2, -SCALE),
 		anchor('bot'),
 		color(BLACK),
-		z(L.walls + 10),
+		z(L.walls - 1),
 	])
 
 	// Bottom
@@ -233,7 +287,7 @@ scene('game', () => {
 		pos(SCALE * mapWidth/2, SCALE*mapHeight),
 		anchor('top'),
 		color(BLACK),
-		z(L.walls + 10),
+		z(L.walls - 1),
 	])
 
 	// Left
@@ -242,7 +296,7 @@ scene('game', () => {
 		pos(0, SCALE * mapHeight/2),
 		anchor('right'),
 		color(BLACK),
-		z(L.walls + 10),
+		z(L.walls - 1),
 	])
 	
 	// Right
@@ -251,7 +305,7 @@ scene('game', () => {
 		pos(SCALE*mapWidth, SCALE * mapHeight/2),
 		anchor('left'),
 		color(BLACK),
-		z(L.walls + 10),
+		z(L.walls - 1),
 	])
 
 	// --- PATHFINDER PREP ---
@@ -447,6 +501,12 @@ scene('game', () => {
 		'player'
 	])
 
+	// Verify wall states
+
+	get('wallTile').forEach((w) => {
+		verifyWallState(w);
+	})
+
 	// Spawn NPCs
 
 	let reamainingSpawns = possibleSpawnPoints.length;
@@ -508,7 +568,7 @@ scene('game', () => {
 	// --- PEOPLE SKINS ---
 
 	get('person').forEach((person) => {
-		person.puppet = add([
+		person.puppet = raycastedPersonMask.add([
 			sprite('person2', { anim: 'front' }),
 			pos(0,0),
 			anchor('bot'),
@@ -1274,13 +1334,21 @@ scene('game', () => {
 			player.acceleration -= dt() * WALKING_ACCELERATION;
 		}
 
-
 		player.acceleration = Math.max(0, Math.min(player.acceleration, 1));
+		
 
-		let displacement = Vec2.fromAngle(player.angle - 90).scale(
-			WALKING_SPEED * SCALE * dt() * player.acceleration * getBoostMulti(player));
+		if (player.acceleration > 0) {
+			let displacement = Vec2.fromAngle(player.angle - 90).scale(
+				WALKING_SPEED * SCALE * dt() * player.acceleration * getBoostMulti(player));
+				
+			player.pos = player.pos.add(displacement);
 
-		player.pos = player.pos.add(displacement);
+			get('wallTile').forEach((w) => {
+				if (Math.abs(player.pos.y - w.pos.y) < SCALE*2) {
+					verifyWallState(w);
+				}
+			})
+		}
 
 		
 		get('npc').forEach((npc) => {

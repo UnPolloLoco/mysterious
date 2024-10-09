@@ -45,7 +45,7 @@ const MAP_ICON_INFO = {
 	'@': { behavior: 'SPAWN' },
 	'$': { behavior: 'COIN' },
 	'#': { behavior: 'WALL', sprite: 'wall' },
-	'%': { behavior: 'HITBOX', sprite: 'wall' },
+	//'%': { behavior: 'HITBOX', sprite: 'wall' },
 	'o': { behavior: 'HITBOX', sprite: 'block' },
 	'.': { behavior: 'FLOOR', sprite: 'floor' },
 	'A': { behavior: 'ARMORY', sprite: 'block' },
@@ -54,10 +54,10 @@ const MAP_ICON_INFO = {
 const SPRITE_INFO = {
 	'wall': {
 		offset: [0, -0.5],
-		width: 800,
+		width: 100,
 	},
 	'floor': {
-		width: 800,
+		width: 100,
 		special: 'floor'
 	}
 }

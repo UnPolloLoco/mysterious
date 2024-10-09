@@ -39,12 +39,17 @@
 [x] Fix HITBOX tile layering
 [x] Test new floor texture
 [x] Redraw map
-[ ] Make raycast based on the bottom of the wall
-[ ] Make other rooms visible beyond raycast shadow
-[ ] Add the top of the walls
-[ ] Mask NPCs when out of view
+[x] Make raycast based on the bottom of the wall
+[x] Add the top of the walls
+[x] Use the offscreen component
+[x] Make other rooms visible beyond raycast shadow
+[x] Verify wall state for ALL walls at generation
+[x] Mask NPCs when out of view (do the same with the wall??)
+[ ] Outline the wall roof
 [ ] Add shadows under the walls
-[ ] Use the offscreen component
+[ ] Darken out-of-sight walls?
+[ ] Create the general full map
+[ ] Detail the full map
 
 [ ] Fix rare pathfinding related crash
 [ ] Fix murderer temporarily stopping movement sometimes (related to witness count check?)
