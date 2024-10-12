@@ -28,12 +28,17 @@ scene('game', () => {
 	])
 
 	// Person mask vison polygon
-	const raycastedPersonMask = add([
-		pos(0,0),
-		polygon([vec2(0), vec2(300), vec2(0,300)]),
-		mask('intersect'),
-		z(L.players),
-	])
+	let raycastedPersonMaskList = [];
+	for (let i = 0; i < MAX_PLAYER_COUNT; i++) {
+		raycastedPersonMaskList.push(
+			add([
+				pos(0,0),
+				polygon([vec2(0), vec2(300), vec2(0,300)]),
+				mask('intersect'),
+				z(L.players),
+			])
+		)
+	}
 
 	// Wall shade mask vison polygon
 	const raycastedWallShadeMask = add([
@@ -73,7 +78,7 @@ scene('game', () => {
 		// Subtraction edit
 
 		raycastedWallEffectMask.pts = pts;
-		raycastedPersonMask.pts = pts;
+		raycastedPersonMaskList.forEach((m) => {m.pts = pts})
 	}
 	
 	// --- MAP CREATION ---
@@ -165,7 +170,7 @@ scene('game', () => {
 				])
 
 				if (tileBehavior == 'WALL')  {
-					tile.use(z(L.players));
+					tile.use(z(L.players + (tile.pos.y/SCALE + 1.5)/1000));
 					tile.use('wallTile');
 
 					// Shadow
@@ -233,7 +238,7 @@ scene('game', () => {
 		}
 	}
 
-	const MAX_PLAYER_COUNT = possibleSpawnPoints.length;
+	//const MAX_PLAYER_COUNT = possibleSpawnPoints.length;
 
 	// --- SPECIAL WALLS CREATION ---
 
@@ -254,6 +259,8 @@ scene('game', () => {
 	});
 
 	function verifyWallState(w) {
+
+
 		if (player.pos.y > w.pos.y + SCALE*1.5) {
 			// Below the wall
 			//w.use(z(L.players - 5));
@@ -486,6 +493,7 @@ scene('game', () => {
 		{
 			isNPC: false,
 			puppet: null,
+			puppetMask: raycastedPersonMaskList[0],
 			acceleration: 0,
 			rotationAcceleration: 0,
 			coins: 0,
@@ -512,6 +520,7 @@ scene('game', () => {
 	let reamainingSpawns = possibleSpawnPoints.length;
 
 	for (let i = 0; i < reamainingSpawns; i++) {
+		let currentMask = raycastedPersonMaskList[i+1];
 		let npc = add([
 			sprite('person'),
 			pos(useSpawnPoint()),
@@ -528,6 +537,7 @@ scene('game', () => {
 			{
 				isNPC: true,
 				puppet: null,
+				puppetMask: currentMask,
 				acceleration: 0,
 				rotationTween: false,
 				fakeAngle: 0,
@@ -568,7 +578,7 @@ scene('game', () => {
 	// --- PEOPLE SKINS ---
 
 	get('person').forEach((person) => {
-		person.puppet = raycastedPersonMask.add([
+		person.puppet = /*person.puppetMask.*/add([
 			sprite('person2', { anim: 'front' }),
 			pos(0,0),
 			anchor('bot'),
@@ -577,6 +587,7 @@ scene('game', () => {
 			area(),
 			{
 				master: person,
+				maskObj: person.puppetMask,
 			},
 			'puppet',
 		])
@@ -1342,12 +1353,13 @@ scene('game', () => {
 				WALKING_SPEED * SCALE * dt() * player.acceleration * getBoostMulti(player));
 				
 			player.pos = player.pos.add(displacement);
+			player.puppet/*Mask*/.use(z(L.players + player.pos.y/SCALE/1000))
 
-			get('wallTile').forEach((w) => {
+			/*get('wallTile').forEach((w) => {
 				if (Math.abs(player.pos.y - w.pos.y) < SCALE*2) {
 					verifyWallState(w);
 				}
-			})
+			})*/
 		}
 
 		
@@ -1420,6 +1432,7 @@ scene('game', () => {
 						-WALKING_SPEED * SCALE * dt() * getBoostMulti(npc));
 			
 					npc.pos = npc.pos.add(displacement);
+					npc.puppet/*Mask*/.use(z(L.players + npc.pos.y/SCALE/1000))
 				}
 	
 				// - Waypoint navigation -
@@ -1521,6 +1534,20 @@ scene('game', () => {
 
 	onDraw(() => {
 		drawWallMask();
+
+		debug.log(player.puppetMask.z)
+		debug.log(player.puppet.z)
+		debug.log(player.z)
+		get('wallTile').forEach((w) => {
+			drawText({
+				pos: w.pos.add(0,SCALE*1.7),
+				text: `${w.z.toFixed(3)}`,
+				size: SCALE/3,
+				width: SCALE*0.8,
+				font: 'sans-serif',
+				color: WHITE,
+			})
+		})
 	})
 
 });

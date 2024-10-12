@@ -26,7 +26,7 @@ const ARMORY_USE_RANGE = 3;
 const ARMORY_USE_COST = 5;
 
 const PERSON_HITBOX_SCALE = 1.1;
-const PUPPET_OFFSET = 0.35;
+const PUPPET_OFFSET = 0.1;
 const PUPPET_SIZE = 1.5;
 
 const PATHFIND_MODE_PRIORITY = {
@@ -101,3 +101,5 @@ const MAP = [
 	'#.............#',
 	'###############',
 ]
+
+let MAX_PLAYER_COUNT = 0; MAP.forEach((r) => { MAX_PLAYER_COUNT += r.split('@').length - 1 })

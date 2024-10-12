@@ -44,7 +44,9 @@
 [x] Use the offscreen component
 [x] Make other rooms visible beyond raycast shadow
 [x] Verify wall state for ALL walls at generation
-[x] Mask NPCs when out of view (do the same with the wall??)
+[ ] Mask NPCs when out of view
+[x] Properly layer walls
+[ ] Figure out a compromise between masking and layering
 [ ] Outline the wall roof
 [ ] Add shadows under the walls
 [ ] Darken out-of-sight walls?
